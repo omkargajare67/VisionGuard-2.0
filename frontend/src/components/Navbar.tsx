@@ -1,11 +1,11 @@
 import React from 'react';
-import { Cpu, ShieldCheck, Eye, Activity } from 'lucide-react';
+import { Cpu, ShieldCheck, Eye, Activity, Binary } from 'lucide-react';
 
 interface NavbarProps {
   backendOnline: boolean | null;
   stage: number;
-  activeTab: 'monitor' | 'vision';
-  onSelectTab: (tab: 'monitor' | 'vision') => void;
+  activeTab: 'monitor' | 'vision' | 'deam';
+  onSelectTab: (tab: 'monitor' | 'vision' | 'deam') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -25,7 +25,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div>
             <div className="flex items-center space-x-2">
               <h1 className="text-xl font-bold tracking-tight text-white">VISIONGUARD 2.0</h1>
-              <span className="px-2 py-0.5 text-xs font-semibold uppercase tracking-wider rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/30">
+              <span className="px-2 py-0.5 text-xs font-semibold uppercase tracking-wider rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
                 Stage {stage}
               </span>
             </div>
@@ -37,6 +37,18 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Center Navigation Tabs */}
         <div className="flex items-center p-1 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+          <button
+            onClick={() => onSelectTab('deam')}
+            className={`px-3.5 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all ${
+              activeTab === 'deam'
+                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-600/20'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Binary className="w-3.5 h-3.5" />
+            <span>DEAM Lab (Stage 3)</span>
+          </button>
+
           <button
             onClick={() => onSelectTab('vision')}
             className={`px-3.5 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all ${

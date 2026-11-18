@@ -22,7 +22,11 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
-export const VisionInspector: React.FC = () => {
+interface VisionInspectorProps {
+  onInspectionComplete?: (result: InspectionResult) => void;
+}
+
+export const VisionInspector: React.FC<VisionInspectorProps> = ({ onInspectionComplete }) => {
   const [samples, setSamples] = useState<SampleMetadata[]>([]);
   const [selectedSampleId, setSelectedSampleId] = useState<string>('VG-001');
   const [inputMode, setInputMode] = useState<'synthetic' | 'upload' | 'webcam'>('synthetic');
@@ -212,6 +216,7 @@ export const VisionInspector: React.FC = () => {
         throw new Error('Please select a sample or capture/upload an image first.');
       }
       setInspectionResult(result);
+      onInspectionComplete?.(result);
     } catch (err: any) {
       setErrorMessage(err.message || 'Inspection failed.');
     } finally {

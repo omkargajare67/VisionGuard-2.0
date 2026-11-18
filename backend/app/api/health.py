@@ -6,9 +6,9 @@ router = APIRouter(prefix="/api", tags=["health"])
 
 @router.get("/health", response_model=HealthResponse)
 def get_health() -> HealthResponse:
-    """Return system health status for VisionGuard 2.0 (Stage 1)."""
+    """Return system health status for VisionGuard 2.0 (Stage 3)."""
     return HealthResponse(
         status="running",
         project="VisionGuard 2.0",
-        stage=1,
+        stage=3,
     )
