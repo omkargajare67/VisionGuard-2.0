@@ -4,7 +4,7 @@ This roadmap outlines the systematic 5-stage implementation strategy for VisionG
 
 ---
 
-## Stage 1: Foundation & Architecture Setup (Current Stage)
+## Stage 1: Foundation & Architecture Setup (Completed)
 - [x] Environment inspection (Python 3.12, Node.js 26, npm 11).
 - [x] Directory structure setup (`frontend/`, `backend/`, `docs/`, `assets/`).
 - [x] React + Vite + TypeScript frontend initialization with Tailwind CSS, Lucide React, and Framer Motion.
@@ -16,20 +16,46 @@ This roadmap outlines the systematic 5-stage implementation strategy for VisionG
 
 ---
 
-## Stage 2: OpenCV Vision Inspection & Synthetic Sample Generation
-- [ ] Synthetic sample image generator:
-  - Generate pristine nominal industrial workpieces (cylinders, PCBs, machined parts).
-  - Inject controlled defects: surface scratches, structural cracks, contour deviations, drilling offsets, missing components.
-- [ ] Vision processing pipeline (`backend/app/vision/`):
-  - Preprocessing module: Grayscale, Gaussian blur, bilateral filtering, CLAHE.
-  - Defect detection module: Canny edge gradient analysis, contour analysis, dimensional variance checks.
-  - Multi-input ingestion: Synthetic catalog, local file upload, and real-time webcam feed.
-- [ ] REST API endpoints for inspection triggering and parameter tuning (`/api/inspection`, `/api/samples`).
-- [ ] Interactive frontend vision inspector component with annotated defect bounding boxes and metric overlays.
+## Stage 2: OpenCV Vision Inspection & Synthetic Sample Generation (Completed)
+- [x] Standardized industrial electronic control module model (640x480 resolution, dark slate casing, neutral light background).
+- [x] Synthetic sample generator (`backend/app/vision/synthetic_samples.py`):
+  - `VG-001`: Nominal product (All features conforming -> PASS).
+  - `VG-002`: Missing identification label (Label absent -> REJECT).
+  - `VG-003`: Non-conforming marking colour (Red/Orange instead of Blue -> REJECT).
+  - `VG-004`: Missing component C2 (Silkscreen footprint only -> REJECT).
+  - `VG-005`: Structural contour deviation (Corner notch with reduced rectangularity & vertices != 4 -> REJECT).
+  - `VG-006`: Surface abrasive scratch defect (Dark linear defect exceeding threshold -> REJECT).
+- [x] OpenCV classical preprocessing pipeline (`backend/app/vision/preprocessing.py`):
+  - Image validation, resizing, grayscale conversion.
+  - Gaussian blur, bilateral filtering, CLAHE adaptive histogram equalization.
+  - Morphological gradient, black-hat transform, and Canny edge detection.
+- [x] Defect detection engine (`backend/app/vision/defect_detection.py`):
+  - Product presence & centering check via binary inverse thresholding and contour analysis.
+  - Identification label detection via ROI luminance intensity extraction.
+  - Marking colour verification in HSV color space (`H: [95, 135]`).
+  - Individual terminal component presence analysis via brightness & edge density.
+  - Outline & geometry verification via solidity, rectangularity, aspect ratio, and polygon approximation.
+  - Surface scratch detection with automated feature exclusion masks (contour erosion).
+  - Output binary flags: `product_detected`, `label_present`, `marking_correct`, `components_complete`, `geometry_ok`, `surface_defect_detected`.
+- [x] REST API endpoints (`backend/app/api/`):
+  - `GET /api/samples`: Synthetic sample catalog metadata.
+  - `GET /api/samples/{sample_id}/image`: Raw benchmark JPEG image rendering.
+  - `POST /api/inspection/analyze-sample`: Synthetic benchmark inspection.
+  - `POST /api/inspection/analyze`: Multipart image upload (local file or webcam frame).
+  - `GET /api/inspection/config`: Inspection thresholds & ROI geometries.
+- [x] Frontend Vision Inspector (`frontend/src/components/vision/`):
+  - Navigation between System Monitor (Stage 1) and Vision Inspector (Stage 2).
+  - Interactive Sample Catalog with thumbnails and defect badges.
+  - Multi-source ingestion: Synthetic benchmark, Local file upload, Live webcam capture.
+  - Interactive OpenCV Preprocessing Pipeline viewer (Original, Grayscale, CLAHE, Edge, Annotated).
+  - Split / Side-by-side comparison slider.
+  - Telemetry table of DEAM digital binary flags and measured engineering metrics.
+- [x] Automated test suite (`backend/tests/test_vision.py`):
+  - 17 automated tests passing covering sample generation, all 6 defect conditions, invalid image rejection, and all API endpoints.
 
 ---
 
-## Stage 3: DEAM Digital Electronics Simulation Engine
+## Stage 3: DEAM Digital Electronics Simulation Engine (Upcoming)
 - [ ] Unit 1: Logic Gates & Boolean Algebra:
   - Truth table generators for standard and universal gates.
   - Automated Karnaugh Map (K-Map) 2/3/4-variable minimization engine.
@@ -45,7 +71,7 @@ This roadmap outlines the systematic 5-stage implementation strategy for VisionG
 
 ---
 
-## Stage 4: Educational 8086 Microprocessor & 8255 PPI Simulator
+## Stage 4: Educational 8086 Microprocessor & 8255 PPI Simulator (Upcoming)
 - [ ] Educational Intel 8086 Microprocessor Core (`backend/app/microprocessor/`):
   - 16-bit register file (AX, BX, CX, DX, SI, DI, BP, SP, CS, DS, SS, ES, IP, Flags).
   - 1 MB Segmented Memory Model with logical-to-physical address calculation.
@@ -61,7 +87,7 @@ This roadmap outlines the systematic 5-stage implementation strategy for VisionG
 
 ---
 
-## Stage 5: Full Virtual Production Line & System Integration
+## Stage 5: Full Virtual Production Line & System Integration (Upcoming)
 - [ ] Physics-informed production line simulation engine (`backend/app/simulation/`):
   - Discrete-time conveyor kinematic model.
   - Infrared beam sensor triggering and debounce logic.

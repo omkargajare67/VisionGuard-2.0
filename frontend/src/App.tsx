@@ -3,10 +3,12 @@ import { Navbar } from './components/Navbar';
 import { HealthMonitor } from './components/HealthMonitor';
 import { ArchitectureOverview } from './components/ArchitectureOverview';
 import { DiagnosticLog } from './components/DiagnosticLog';
+import { VisionInspector } from './components/vision/VisionInspector';
 import { fetchHealth } from './services/api';
 import type { HealthResponse, HealthCheckRecord } from './types';
 
 export const App: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'vision' | 'monitor'>('vision');
   const [healthData, setHealthData] = useState<HealthResponse | null>(null);
   const [latencyMs, setLatencyMs] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -82,46 +84,57 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-cyan-500/30 selection:text-cyan-200">
-      <Navbar backendOnline={error ? false : isBackendOnline} stage={healthData?.stage ?? 1} />
+      <Navbar
+        backendOnline={error ? false : isBackendOnline}
+        stage={2}
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+      />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 space-y-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight text-white">Stage 1 System Baseline</h2>
-            <p className="text-sm text-slate-400 mt-0.5">
-              Integrated Verification Environment & Communication Diagnostics
-            </p>
-          </div>
-          <div className="flex items-center space-x-2 text-xs text-slate-400">
-            <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
-            <span>Vite Dev + FastAPI Uvicorn</span>
-          </div>
-        </div>
+      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
+        {activeTab === 'vision' ? (
+          <VisionInspector />
+        ) : (
+          <div className="space-y-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight text-white">Stage 1 System Baseline</h2>
+                <p className="text-sm text-slate-400 mt-0.5">
+                  Integrated Verification Environment & Communication Diagnostics
+                </p>
+              </div>
+              <div className="flex items-center space-x-2 text-xs text-slate-400">
+                <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
+                <span>FastAPI + OpenCV Ingestion Hub</span>
+              </div>
+            </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-6 space-y-8">
-            <HealthMonitor
-              healthData={healthData}
-              latencyMs={latencyMs}
-              isLoading={isLoading}
-              error={error}
-              autoRefresh={autoRefresh}
-              onRefresh={runHealthCheck}
-              onToggleAutoRefresh={toggleAutoRefresh}
-              lastChecked={lastChecked}
-            />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              <div className="lg:col-span-6 space-y-8">
+                <HealthMonitor
+                  healthData={healthData}
+                  latencyMs={latencyMs}
+                  isLoading={isLoading}
+                  error={error}
+                  autoRefresh={autoRefresh}
+                  onRefresh={runHealthCheck}
+                  onToggleAutoRefresh={toggleAutoRefresh}
+                  lastChecked={lastChecked}
+                />
 
-            <DiagnosticLog records={records} onClear={clearLog} />
-          </div>
+                <DiagnosticLog records={records} onClear={clearLog} />
+              </div>
 
-          <div className="lg:col-span-6">
-            <ArchitectureOverview />
+              <div className="lg:col-span-6">
+                <ArchitectureOverview />
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </main>
 
       <footer className="border-t border-slate-900 bg-slate-950/80 px-6 py-4 text-center text-xs text-slate-500">
-        VisionGuard 2.0 &bull; Academic DEAM Capstone System &bull; Stage 1 Baseline Architecture
+        VisionGuard 2.0 &bull; Academic DEAM Capstone System &bull; Stage 2 OpenCV Vision Engine
       </footer>
     </div>
   );
