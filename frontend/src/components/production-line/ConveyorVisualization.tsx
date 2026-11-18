@@ -377,8 +377,8 @@ export const ConveyorVisualization: React.FC<ConveyorVisualizationProps> = ({
       </div>
 
       {/* Bottom Track Ruler & Legend */}
-      <div className="relative z-10 flex items-center justify-between pt-2 border-t border-slate-800/80 text-[10px] text-slate-400 font-mono">
-        <div className="flex items-center space-x-4">
+      <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/80 text-[10px] text-slate-400 font-mono">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded bg-cyan-500" /> Normal Track
           </span>

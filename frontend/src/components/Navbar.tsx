@@ -18,28 +18,28 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         {/* Brand */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-3 shrink-0">
           <div className="p-2.5 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-600 shadow-lg shadow-cyan-500/20 text-white">
             <Cpu className="w-6 h-6" />
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <h1 className="text-xl font-bold tracking-tight text-white">VISIONGUARD 2.0</h1>
-              <span className="px-2 py-0.5 text-xs font-semibold uppercase tracking-wider rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+              <h1 className="text-xl font-bold tracking-tight text-white whitespace-nowrap">VISIONGUARD 2.0</h1>
+              <span className="px-2 py-0.5 text-xs font-semibold uppercase tracking-wider rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 whitespace-nowrap">
                 Stage {stage}
               </span>
             </div>
-            <p className="text-xs text-slate-400">
-              DEAM-Integrated Intelligent Product Quality Inspection & Automated Sorting System
+            <p className="text-xs text-slate-400 whitespace-nowrap hidden lg:block">
+              DEAM-Integrated Intelligent Product Quality Inspection &amp; Automated Sorting System
             </p>
           </div>
         </div>
 
         {/* Center Navigation Tabs */}
-        <div className="flex items-center p-1 rounded-xl bg-slate-950 border border-slate-800 text-xs overflow-x-auto">
+        <div className="flex items-center p-1 rounded-xl bg-slate-950 border border-slate-800 text-xs overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0 max-w-full">
           <button
             onClick={() => onSelectTab('production')}
-            className={`px-3 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap shrink-0 ${
               activeTab === 'production'
                 ? 'bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-md shadow-cyan-600/30'
                 : 'text-slate-400 hover:text-slate-200'
@@ -51,7 +51,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={() => onSelectTab('8086')}
-            className={`px-3 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap shrink-0 ${
               activeTab === '8086'
                 ? 'bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-md shadow-indigo-600/20'
                 : 'text-slate-400 hover:text-slate-200'
@@ -63,7 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={() => onSelectTab('deam')}
-            className={`px-3 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap shrink-0 ${
               activeTab === 'deam'
                 ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-600/20'
                 : 'text-slate-400 hover:text-slate-200'
@@ -75,7 +75,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={() => onSelectTab('vision')}
-            className={`px-3 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap shrink-0 ${
               activeTab === 'vision'
                 ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-600/20'
                 : 'text-slate-400 hover:text-slate-200'
@@ -87,7 +87,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={() => onSelectTab('monitor')}
-            className={`px-3 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap shrink-0 ${
               activeTab === 'monitor'
                 ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-600/20'
                 : 'text-slate-400 hover:text-slate-200'
@@ -99,7 +99,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Right Status */}
-        <div className="flex items-center space-x-4 self-end md:self-auto">
+        <div className="flex items-center space-x-4 self-end md:self-auto shrink-0">
           <div className="flex items-center space-x-2 px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-950/60 text-xs">
             <span className="text-slate-400">Backend:</span>
             <span className="flex items-center space-x-1.5 font-medium">
@@ -126,9 +126,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center space-x-1 text-xs text-slate-500">
+          <div className="flex items-center space-x-1 text-xs text-slate-500 whitespace-nowrap shrink-0">
             <ShieldCheck className="w-4 h-4 text-cyan-400" />
-            <span>Intel 8086 & 8255</span>
+            <span>Intel 8086 &amp; 8255</span>
           </div>
         </div>
       </div>

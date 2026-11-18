@@ -7,6 +7,7 @@ import { VisionInspector } from './components/vision/VisionInspector';
 import { DeamLaboratory } from './components/deam/DeamLaboratory';
 import { MicroprocessorLab } from './components/microprocessor/MicroprocessorLab';
 import { ProductionLineDashboard } from './components/production-line/ProductionLineDashboard';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { fetchHealth } from './services/api';
 import type { HealthResponse, HealthCheckRecord, InspectionResult } from './types';
 
@@ -87,7 +88,7 @@ export const App: React.FC = () => {
   const isBackendOnline = healthData?.status === 'running' && !error;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-cyan-500/30 selection:text-cyan-200">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200">
       <Navbar
         backendOnline={error ? false : isBackendOnline}
         stage={5}
@@ -96,51 +97,53 @@ export const App: React.FC = () => {
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
-        {activeTab === 'production' ? (
-          <ProductionLineDashboard />
-        ) : activeTab === '8086' ? (
-          <MicroprocessorLab latestInspectionResult={latestInspection} />
-        ) : activeTab === 'deam' ? (
-          <DeamLaboratory latestInspectionResult={latestInspection} />
-        ) : activeTab === 'vision' ? (
-          <VisionInspector onInspectionComplete={setLatestInspection} />
-        ) : (
-          <div className="space-y-8">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
-              <div>
-                <h2 className="text-2xl font-bold tracking-tight text-white">Stage 1 System Baseline</h2>
-                <p className="text-sm text-slate-400 mt-0.5">
-                  Integrated Verification Environment & Communication Diagnostics
-                </p>
+        <ErrorBoundary fallbackTitle="VisionGuard Module Error">
+          {activeTab === 'production' ? (
+            <ProductionLineDashboard />
+          ) : activeTab === '8086' ? (
+            <MicroprocessorLab latestInspectionResult={latestInspection} />
+          ) : activeTab === 'deam' ? (
+            <DeamLaboratory latestInspectionResult={latestInspection} />
+          ) : activeTab === 'vision' ? (
+            <VisionInspector onInspectionComplete={setLatestInspection} />
+          ) : (
+            <div className="space-y-8">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
+                <div>
+                  <h2 className="text-2xl font-bold tracking-tight text-white">Stage 1 System Baseline</h2>
+                  <p className="text-sm text-slate-400 mt-0.5">
+                    Integrated Verification Environment &amp; Communication Diagnostics
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2 text-xs text-slate-400">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
+                  <span>FastAPI + OpenCV Ingestion Hub</span>
+                </div>
               </div>
-              <div className="flex items-center space-x-2 text-xs text-slate-400">
-                <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
-                <span>FastAPI + OpenCV Ingestion Hub</span>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="lg:col-span-6 space-y-8">
+                  <HealthMonitor
+                    healthData={healthData}
+                    latencyMs={latencyMs}
+                    isLoading={isLoading}
+                    error={error}
+                    autoRefresh={autoRefresh}
+                    onRefresh={runHealthCheck}
+                    onToggleAutoRefresh={toggleAutoRefresh}
+                    lastChecked={lastChecked}
+                  />
+
+                  <DiagnosticLog records={records} onClear={clearLog} />
+                </div>
+
+                <div className="lg:col-span-6">
+                  <ArchitectureOverview />
+                </div>
               </div>
             </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              <div className="lg:col-span-6 space-y-8">
-                <HealthMonitor
-                  healthData={healthData}
-                  latencyMs={latencyMs}
-                  isLoading={isLoading}
-                  error={error}
-                  autoRefresh={autoRefresh}
-                  onRefresh={runHealthCheck}
-                  onToggleAutoRefresh={toggleAutoRefresh}
-                  lastChecked={lastChecked}
-                />
-
-                <DiagnosticLog records={records} onClear={clearLog} />
-              </div>
-
-              <div className="lg:col-span-6">
-                <ArchitectureOverview />
-              </div>
-            </div>
-          </div>
-        )}
+          )}
+        </ErrorBoundary>
       </main>
 
       <footer className="border-t border-slate-900 bg-slate-950/80 px-6 py-4 text-center text-xs text-slate-500">

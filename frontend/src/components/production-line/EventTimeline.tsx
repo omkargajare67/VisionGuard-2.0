@@ -54,14 +54,19 @@ export const EventTimeline: React.FC<EventTimelineProps> = ({ events = [] }) => 
             No events recorded yet. Start conveyor or inject products to begin.
           </div>
         ) : (
-          filteredEvents.map((ev) => {
-            const isAlert = ev.event_type.includes('EMERGENCY') || ev.event_type.includes('FAULT');
-            const isPass = ev.message.includes('PASS');
-            const isReject = ev.message.includes('REJECT');
+          filteredEvents.map((ev: any, idx) => {
+            const eventType = String(ev.event_type || '');
+            const message = String(ev.message || ev.description || '');
+            const isAlert = eventType.includes('EMERGENCY') || eventType.includes('FAULT');
+            const isPass = message.includes('PASS');
+            const isReject = message.includes('REJECT');
+            const tick = ev.tick ?? ev.simulation_tick ?? 0;
+            const eventKey = ev.id || ev.event_id || `ev-${idx}`;
+            const timeStr = ev.timestamp ? new Date(ev.timestamp).toLocaleTimeString() : '';
 
             return (
               <div
-                key={ev.id}
+                key={eventKey}
                 className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 transition-all ${
                   isAlert
                     ? 'bg-rose-950/20 border-rose-500/30 text-rose-200'
@@ -73,22 +78,22 @@ export const EventTimeline: React.FC<EventTimelineProps> = ({ events = [] }) => 
                 }`}
               >
                 <div className="flex items-center space-x-2.5">
-                  <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-cyan-400 font-bold">
-                    T+{ev.tick}
+                  <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-cyan-400 font-bold font-mono">
+                    T+{tick}
                   </span>
 
                   {ev.product_id && (
-                    <span className="px-1.5 py-0.5 rounded bg-indigo-950 border border-indigo-500/30 text-[10px] text-indigo-300 font-bold">
+                    <span className="px-1.5 py-0.5 rounded bg-indigo-950 border border-indigo-500/30 text-[10px] text-indigo-300 font-bold font-mono">
                       {ev.product_id}
                     </span>
                   )}
 
-                  <span className="text-slate-200">{ev.message}</span>
+                  <span className="text-slate-200">{message}</span>
                 </div>
 
                 <div className="flex items-center space-x-2 text-[10px] text-slate-500 shrink-0">
                   {ev.station && <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800">{ev.station}</span>}
-                  <span>{new Date(ev.timestamp).toLocaleTimeString()}</span>
+                  {timeStr && <span>{timeStr}</span>}
                 </div>
               </div>
             );
