@@ -117,6 +117,31 @@ def test_vg006_surface_scratch_defect():
     assert any("scratch" in d.lower() for d in res.defect_descriptions)
 
 
+def test_blind_inspection_sample_name_independence():
+    """Verify inspection algorithms work purely on image pixels without relying on sample names."""
+    expected_flags = {
+        "VG-001": (1, 1, 1, 1, 1, 0),
+        "VG-002": (1, 0, 1, 1, 1, 0),
+        "VG-003": (1, 1, 0, 1, 1, 0),
+        "VG-004": (1, 1, 1, 0, 1, 0),
+        "VG-005": (1, 1, 1, 1, 0, 0),
+        "VG-006": (1, 1, 1, 1, 1, 1),
+    }
+    for sid, flags in expected_flags.items():
+        img = generate_sample_image(sid)
+        # Pass anonymous filename to guarantee zero ID-based cheating
+        res = detector.analyze(img, sample_id_or_filename="anonymous_stream_frame.jpg")
+        actual_tuple = (
+            res.flags.product_detected,
+            res.flags.label_present,
+            res.flags.marking_correct,
+            res.flags.components_complete,
+            res.flags.geometry_ok,
+            res.flags.surface_defect_detected,
+        )
+        assert actual_tuple == flags, f"Flag mismatch on anonymous inspection of {sid}: {actual_tuple} != {flags}"
+
+
 # -----------------------------------------------------------------------------
 # 3. PREPROCESSING & INVALID IMAGE TESTS
 # -----------------------------------------------------------------------------
@@ -187,9 +212,12 @@ def test_api_analyze_sample():
     assert data_reject["status"] == "REJECT"
     assert data_reject["flags"]["label_present"] == 0
 
+    # Test 404 on invalid sample ID
+    resp_invalid = client.post("/api/inspection/analyze-sample", json={"sample_id": "VG-INVALID-ID"})
+    assert resp_invalid.status_code == 404
+
 
 def test_api_analyze_uploaded_image():
-    # Generate VG-001 image bytes and post as multipart/form-data
     img = generate_sample_image("VG-001")
     _, buffer = cv2.imencode(".jpg", img)
     file_bytes = io.BytesIO(buffer.tobytes())
@@ -202,6 +230,29 @@ def test_api_analyze_uploaded_image():
     data = resp.json()
     assert data["status"] == "PASS"
     assert data["flags"]["product_detected"] == 1
+
+
+def test_api_analyze_upload_error_cases():
+    # Empty file
+    r_empty = client.post(
+        "/api/inspection/analyze",
+        files={"file": ("empty.jpg", io.BytesIO(b""), "image/jpeg")},
+    )
+    assert r_empty.status_code == 400
+
+    # Unsupported MIME format
+    r_txt = client.post(
+        "/api/inspection/analyze",
+        files={"file": ("notes.txt", io.BytesIO(b"not an image"), "text/plain")},
+    )
+    assert r_txt.status_code == 400
+
+    # Corrupt image bytes
+    r_corrupt = client.post(
+        "/api/inspection/analyze",
+        files={"file": ("corrupt.jpg", io.BytesIO(b"INVALID_HEADER_GARBAGE"), "image/jpeg")},
+    )
+    assert r_corrupt.status_code == 400
 
 
 def test_api_inspection_config():

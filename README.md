@@ -41,12 +41,12 @@ VisionGuard 2.0 is an academic Digital Electronics and Microprocessors (DEAM) ca
 │   ├── PROJECT_REQUIREMENTS.md     # Full functional & non-functional requirements
 │   ├── SYSTEM_ARCHITECTURE.md      # Detailed system diagrams & module schemas
 │   ├── DEAM_MAPPING.md             # Direct mapping of DEAM curriculum Units 1-6
-│   └── DEVELOPMENT_ROADMAP.md      # Five-stage development milestones
+│   └── DEVELOPMENT_ROADMAP.md      # Five-stage development milestones & QA log
 ├── backend/
 │   ├── requirements.txt            # Backend-specific package constraints
 │   ├── tests/
 │   │   ├── __init__.py
-│   │   ├── test_health.py          # Pytest suite for API endpoints
+│   │   ├── test_health.py          # Pytest suite for baseline API endpoints
 │   │   └── test_vision.py          # 17 automated tests for vision & CV pipeline
 │   └── app/
 │       ├── __init__.py
@@ -85,7 +85,7 @@ VisionGuard 2.0 is an academic Digital Electronics and Microprocessors (DEAM) ca
     │       ├── ArchitectureOverview.tsx # 5-stage roadmap & DEAM mapping
     │       ├── DiagnosticLog.tsx   # Request telemetry & latency stream
     │       └── vision/             # [Stage 2] Vision Inspector UI
-    │           ├── VisionInspector.tsx    # Main vision workbench container
+    │           ├── VisionInspector.tsx    # Master vision workbench (webcam stabilized)
     │           ├── SampleCatalog.tsx      # Synthetic sample cards & selector
     │           ├── InspectionResults.tsx  # High-impact verdict & fault log
     │           ├── DefectMetrics.tsx      # DEAM binary logic flags table
@@ -154,21 +154,33 @@ npm run dev
 
 ---
 
-## 5. Automated Test Verification
+## 5. Automated Testing & QA Verification (Stage 2.5)
 
-To run the complete automated test suite (health checks + OpenCV defect algorithms):
+Run the backend test suite:
 ```bash
 $env:PYTHONPATH="."
-.\backend\.venv\Scripts\pytest backend/tests
+.\backend\.venv\Scripts\python -m pytest backend/tests -v
 ```
 
-**Results:**
-- `VG-001` (Nominal product): **PASS** (all binary flags = 1, scratch = 0)
-- `VG-002` (Missing identification label): **REJECT** (`label_present = 0`)
-- `VG-003` (Incorrect blue marking): **REJECT** (`marking_correct = 0`)
-- `VG-004` (Missing component C2): **REJECT** (`components_complete = 0`)
-- `VG-005` (Structural contour defect): **REJECT** (`geometry_ok = 0`)
-- `VG-006` (Surface scratch): **REJECT** (`surface_defect_detected = 1`)
+### 5.1 Verification Results
+- **19 of 19 automated tests passing** across `test_health.py` and `test_vision.py`.
+- **Pixel-Level Blind Test**: Verified that all 6 samples produce the correct binary flags without inspecting filenames:
+  - `VG-001` (Nominal product): **PASS** (`[1, 1, 1, 1, 1, 0]`)
+  - `VG-002` (Missing identification label): **REJECT** (`label_present = 0`)
+  - `VG-003` (Incorrect marking colour): **REJECT** (`marking_correct = 0`)
+  - `VG-004` (Missing component C2): **REJECT** (`components_complete = 0`)
+  - `VG-005` (Structural contour defect): **REJECT** (`geometry_ok = 0`)
+  - `VG-006` (Surface scratch): **REJECT** (`surface_defect_detected = 1`)
+- **API Error Handling**: Verified 404 on nonexistent samples, 400 on empty files, 400 on unsupported MIME types, and 400 on corrupt image bytes.
+- **Frontend Production Build**: `npm run build` succeeds cleanly with zero TypeScript errors.
+
+### 5.2 Implemented vs. Tested vs. Remaining Limitations
+
+| Category | Status / Details |
+|---|---|
+| **Implemented Functionality** | Synthetic sample catalog (6 models), OpenCV classical preprocessing (CLAHE, Bilateral, Canny, Morphology), 6-point defect detection, multipart image upload, stabilized webcam frame acquisition with ref lifecycle management, interactive image comparison slider, sequential pipeline visualizer, DEAM binary flag telemetry table. |
+| **Tested Functionality** | 19 automated Pytest test cases, pixel-level blind sample verification, REST API status codes (200, 400, 404), frontend Vite production compilation, webcam lifecycle track cleanup and error mapping. |
+| **Remaining Limitations** | Optical inspection assumes a light neutral background and standard workpiece orientation. Stage 3 will feed these binary flags into the DEAM Boolean logic decision engine. |
 
 ---
 
@@ -176,6 +188,7 @@ $env:PYTHONPATH="."
 
 - **Stage 1 (Completed)**: Foundation & Architecture Setup (FastAPI backend, Vite frontend, health check, baseline verification).
 - **Stage 2 (Completed)**: OpenCV Vision Inspection Engine & Synthetic Sample Generator (6-sample benchmark generator, classical CV pipeline, multipart upload, webcam acquisition, annotated overlay, DEAM binary flags).
+- **Stage 2.5 (Completed)**: Stabilization & Quality Assurance (Webcam lifecycle fixes, ref-based track cleanup, blind test verification, API validation).
 - **Stage 3 (Upcoming)**: DEAM Digital Electronics Simulation Engine (Gates, Combinational, Flip-Flops, Registers, Counters, FSM).
 - **Stage 4 (Upcoming)**: Educational 8086 Microprocessor & 8255 PPI Simulator.
 - **Stage 5 (Upcoming)**: Full Virtual Production Line & System Integration.

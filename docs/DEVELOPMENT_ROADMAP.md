@@ -1,22 +1,22 @@
-# VisionGuard 2.0: Five-Stage Development Roadmap
+# VisionGuard 2.0: Development Roadmap & Quality Assurance
 
-This roadmap outlines the systematic 5-stage implementation strategy for VisionGuard 2.0.
+This roadmap outlines the systematic phased delivery and verification milestones for VisionGuard 2.0.
 
 ---
 
-## Stage 1: Foundation & Architecture Setup (Completed)
+## Stage 1: Foundation & Architecture Setup (Completed & Verified)
 - [x] Environment inspection (Python 3.12, Node.js 26, npm 11).
 - [x] Directory structure setup (`frontend/`, `backend/`, `docs/`, `assets/`).
 - [x] React + Vite + TypeScript frontend initialization with Tailwind CSS, Lucide React, and Framer Motion.
 - [x] FastAPI backend scaffolding with CORS, routing, and Pydantic schemas.
 - [x] Working `/api/health` endpoint returning `{ "status": "running", "project": "VisionGuard 2.0", "stage": 1 }`.
 - [x] Frontend-backend live connectivity integration and visual diagnostic component.
-- [x] Comprehensive documentation (`PROJECT_REQUIREMENTS.md`, `SYSTEM_ARCHITECTURE.md`, `DEAM_MAPPING.md`, `DEVELOPMENT_ROADMAP.md`).
+- [x] Baseline documentation (`PROJECT_REQUIREMENTS.md`, `SYSTEM_ARCHITECTURE.md`, `DEAM_MAPPING.md`, `DEVELOPMENT_ROADMAP.md`).
 - [x] Root `README.md` and `.gitignore`.
 
 ---
 
-## Stage 2: OpenCV Vision Inspection & Synthetic Sample Generation (Completed)
+## Stage 2: OpenCV Vision Inspection & Synthetic Generation (Completed & Verified)
 - [x] Standardized industrial electronic control module model (640x480 resolution, dark slate casing, neutral light background).
 - [x] Synthetic sample generator (`backend/app/vision/synthetic_samples.py`):
   - `VG-001`: Nominal product (All features conforming -> PASS).
@@ -50,8 +50,46 @@ This roadmap outlines the systematic 5-stage implementation strategy for VisionG
   - Interactive OpenCV Preprocessing Pipeline viewer (Original, Grayscale, CLAHE, Edge, Annotated).
   - Split / Side-by-side comparison slider.
   - Telemetry table of DEAM digital binary flags and measured engineering metrics.
-- [x] Automated test suite (`backend/tests/test_vision.py`):
-  - 17 automated tests passing covering sample generation, all 6 defect conditions, invalid image rejection, and all API endpoints.
+
+---
+
+## Stage 2.5: Stabilization & Quality Assurance (Completed & Verified)
+
+### Implemented Functionality
+- **Webcam Lifecycle Stabilization**:
+  - `streamRef` ref architecture ensuring zero track leakage across React state updates.
+  - Fixed race condition where `videoRef.current` was accessed before component mounting by utilizing a callback ref (`setVideoRef`) and a synchronized mount effect.
+  - Automatic stream termination on input mode transitions (switching away from webcam).
+  - Automatic stream termination on component unmount (`track.stop()`).
+  - Human-friendly camera permission error handling (`NotAllowedError`, `NotFoundError`, `NotReadableError`, `OverconstrainedError`).
+  - Video stream indicator and explicit "Cancel" camera stream controls.
+- **Robust API Error Handling**:
+  - Validated multipart endpoints for empty payloads, unsupported MIME types, and malformed image bytes.
+  - Handled 404 responses for nonexistent synthetic sample identifiers.
+
+### Tested Functionality (19/19 Automated Tests Passing)
+- **Six Benchmark Samples (Pixel-Level Blind Test)**:
+  - `VG-001`: PASS (Flags: `1, 1, 1, 1, 1, 0`)
+  - `VG-002`: REJECT (`label_present = 0`)
+  - `VG-003`: REJECT (`marking_correct = 0`)
+  - `VG-004`: REJECT (`components_complete = 0`)
+  - `VG-005`: REJECT (`geometry_ok = 0`)
+  - `VG-006`: REJECT (`surface_defect_detected = 1`)
+- **Blind Inspection Independence**:
+  - Verified that inspection algorithms operate purely on raw image matrix pixels without relying on sample names or IDs.
+- **API Endpoints Tested**:
+  - `GET /api/health` -> 200 OK
+  - `GET /api/samples` -> 200 OK (returns all 6 registered samples)
+  - `GET /api/samples/{id}/image` -> 200 OK (valid) & 404 (invalid)
+  - `GET /api/inspection/config` -> 200 OK (thresholds & ROIs)
+  - `POST /api/inspection/analyze-sample` -> 200 OK (valid) & 404 (invalid)
+  - `POST /api/inspection/analyze` -> 200 OK (multipart upload), 400 (empty file), 400 (unsupported mime), 400 (corrupt bytes).
+- **Frontend Production Build**:
+  - `npm run build` succeeds cleanly with 0 TypeScript errors or warnings.
+
+### Remaining Limitations
+- **Webcam Constraints**: High-accuracy edge inspection depends on workpiece orientation matching nominal bounds and illumination avoiding heavy shadows or glare.
+- **Fixed Model Profile**: Stage 2 algorithms are calibrated for the standard electronic control module. Stage 3 will generalize rule-based decision trees via DEAM Boolean expressions.
 
 ---
 

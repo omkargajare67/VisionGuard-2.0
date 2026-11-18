@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { SampleCatalog } from './SampleCatalog';
 import { InspectionResults } from './InspectionResults';
 import { DefectMetrics } from './DefectMetrics';
@@ -34,9 +34,9 @@ export const VisionInspector: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Webcam states
+  // Webcam Lifecycle Refs and State
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [webcamStream, setWebcamStream] = useState<MediaStream | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [isWebcamActive, setIsWebcamActive] = useState<boolean>(false);
 
   // Load sample catalog on mount
@@ -63,46 +63,115 @@ export const VisionInspector: React.FC = () => {
     }
   }, [selectedSampleId, inputMode]);
 
-  // Clean up webcam stream on unmount or mode switch
+  // Robust webcam stopping function: operates on ref to avoid stale closures
+  const stopWebcam = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => {
+        try {
+          track.stop();
+        } catch {
+          // ignore track stop errors
+        }
+      });
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setIsWebcamActive(false);
+  }, []);
+
+  // Stop webcam whenever switching away from webcam input mode
+  useEffect(() => {
+    if (inputMode !== 'webcam') {
+      stopWebcam();
+    }
+  }, [inputMode, stopWebcam]);
+
+  // Stop webcam on component unmount
   useEffect(() => {
     return () => {
       stopWebcam();
     };
+  }, [stopWebcam]);
+
+  // Callback ref to attach active stream immediately when the video DOM node mounts
+  const setVideoRef = useCallback((node: HTMLVideoElement | null) => {
+    videoRef.current = node;
+    if (node && streamRef.current) {
+      node.srcObject = streamRef.current;
+      node.play().catch(() => {});
+    }
   }, []);
+
+  // Effect to ensure video element is bound whenever isWebcamActive changes
+  useEffect(() => {
+    if (isWebcamActive && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [isWebcamActive]);
 
   const startWebcam = async () => {
     setErrorMessage(null);
+    // Stop any existing stream first
+    stopWebcam();
+
+    if (!navigator?.mediaDevices?.getUserMedia) {
+      setErrorMessage('Camera access is not supported by this browser environment.');
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 } },
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+        audio: false,
       });
-      setWebcamStream(stream);
+
+      streamRef.current = stream;
       setIsWebcamActive(true);
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.play().catch(() => {});
       }
     } catch (err: any) {
-      setErrorMessage(`Webcam access denied or unavailable: ${err.message}`);
-      setIsWebcamActive(false);
+      stopWebcam();
+      let friendlyError = 'Could not access camera.';
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        friendlyError = 'Camera permission was denied. Please allow camera permissions in your browser address bar.';
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        friendlyError = 'No video capture hardware (webcam) detected on this device.';
+      } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+        friendlyError = 'Camera is already in use by another application or browser tab.';
+      } else if (err.name === 'OverconstrainedError') {
+        friendlyError = 'The requested 640x480 resolution is not supported by your camera.';
+      } else {
+        friendlyError = `Camera initialization error: ${err.message || err.name || 'Unknown error'}`;
+      }
+      setErrorMessage(friendlyError);
     }
-  };
-
-  const stopWebcam = () => {
-    if (webcamStream) {
-      webcamStream.getTracks().forEach((track) => track.stop());
-      setWebcamStream(null);
-    }
-    setIsWebcamActive(false);
   };
 
   const captureWebcamFrame = () => {
-    if (!videoRef.current) return;
+    if (!videoRef.current) {
+      setErrorMessage('Camera frame not available for capture.');
+      return;
+    }
     const video = videoRef.current;
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      setErrorMessage('Camera stream is still loading. Please wait a moment and try again.');
+      return;
+    }
+
     const canvas = document.createElement('canvas');
     canvas.width = 640;
     canvas.height = 480;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      setErrorMessage('Failed to create canvas rendering context for frame capture.');
+      return;
+    }
 
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
@@ -140,7 +209,7 @@ export const VisionInspector: React.FC = () => {
       } else if (uploadedFile) {
         result = await analyzeUploadedImage(uploadedFile, uploadedFile.name);
       } else {
-        throw new Error('Please select or capture an image first.');
+        throw new Error('Please select a sample or capture/upload an image first.');
       }
       setInspectionResult(result);
     } catch (err: any) {
@@ -267,13 +336,18 @@ export const VisionInspector: React.FC = () => {
           <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/60 text-center space-y-3">
             {isWebcamActive ? (
               <div className="space-y-3">
-                <div className="aspect-[4/3] max-w-md mx-auto rounded-xl overflow-hidden bg-black border border-slate-800">
+                <div className="aspect-[4/3] max-w-md mx-auto rounded-xl overflow-hidden bg-black border border-slate-800 relative">
                   <video
-                    ref={videoRef}
+                    ref={setVideoRef}
                     autoPlay
                     playsInline
+                    muted
                     className="w-full h-full object-cover"
                   />
+                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-rose-500/80 text-white text-[10px] font-semibold flex items-center space-x-1 animate-pulse">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                    <span>LIVE STREAM</span>
+                  </div>
                 </div>
                 <div className="flex items-center justify-center space-x-3">
                   <button
@@ -292,7 +366,7 @@ export const VisionInspector: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="py-6">
+              <div className="py-6 space-y-2">
                 <button
                   onClick={startWebcam}
                   className="px-4 py-2 rounded-lg text-xs font-semibold bg-cyan-600 hover:bg-cyan-500 text-white shadow-md transition-colors inline-flex items-center space-x-2"
@@ -300,6 +374,9 @@ export const VisionInspector: React.FC = () => {
                   <Camera className="w-4 h-4" />
                   <span>Start Camera Stream</span>
                 </button>
+                <p className="text-[11px] text-slate-500">
+                  Direct browser camera access. Frame will be acquired locally without external transmission.
+                </p>
               </div>
             )}
           </div>
