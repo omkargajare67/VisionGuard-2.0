@@ -1,11 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.app.api import deam, health, inspection, samples
+from backend.app.api import deam, health, inspection, microprocessor, samples
 
 app = FastAPI(
     title="VisionGuard 2.0 API",
     description="DEAM-Integrated Intelligent Product Quality Inspection and Automated Sorting System",
-    version="0.3.0",
+    version="0.4.0",
 )
 
 # Configure CORS for local development
@@ -27,11 +27,12 @@ app.include_router(health.router)
 app.include_router(samples.router)
 app.include_router(inspection.router)
 app.include_router(deam.router)
+app.include_router(microprocessor.router)
 
 
 @app.get("/")
 def root():
     return {
         "message": "Welcome to VisionGuard 2.0 API. Navigate to /docs for interactive API documentation.",
-        "stage": 3,
+        "stage": 4,
     }

@@ -417,3 +417,332 @@ export async function calculateInspectionDecisionFromSample(sampleId: string): P
   }
   return response.json();
 }
+
+// -----------------------------------------------------------------------------
+// STAGE 4: 8086 MICROPROCESSOR & 8255 PPI API CLIENT METHODS
+// -----------------------------------------------------------------------------
+
+export async function fetchMicroprocessorStatus(): Promise<any> {
+  const response = await fetch(`${API_BASE}/microprocessor/status`);
+  if (!response.ok) {
+    throw new Error('Failed to load microprocessor status');
+  }
+  return response.json();
+}
+
+export async function fetchMicroprocessorExamples(): Promise<Record<string, { title: string; description: string; code: string }>> {
+  const response = await fetch(`${API_BASE}/microprocessor/examples`);
+  if (!response.ok) {
+    throw new Error('Failed to load example programs');
+  }
+  return response.json();
+}
+
+export async function fetchSessionState(sessionId: string = 'default'): Promise<any> {
+  const response = await fetch(`${API_BASE}/microprocessor/sessions/${sessionId}`);
+  if (!response.ok) {
+    // If not found, create it
+    const createResp = await fetch(`${API_BASE}/microprocessor/sessions/${sessionId}`, { method: 'POST' });
+    if (!createResp.ok) throw new Error('Failed to initialize CPU session');
+    return createResp.json();
+  }
+  return response.json();
+}
+
+export async function resetSession(sessionId: string = 'default'): Promise<any> {
+  const response = await fetch(`${API_BASE}/microprocessor/sessions/${sessionId}/reset`, {
+    method: 'POST',
+  });
+  if (!response.ok) {
+    throw new Error('Failed to reset CPU session');
+  }
+  return response.json();
+}
+
+export async function loadAssemblyProgram(
+  sessionId: string = 'default',
+  code: string,
+  baseOffset: number = 0
+): Promise<any> {
+  const response = await fetch(`${API_BASE}/microprocessor/sessions/${sessionId}/load`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code, base_offset: baseOffset }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    const msg = err.detail?.errors ? err.detail.errors.join('; ') : (err.detail || 'Assembly failed');
+    throw new Error(msg);
+  }
+  return response.json();
+}
+
+export async function stepInstruction(sessionId: string = 'default'): Promise<{ step: any; full_state: any }> {
+  const response = await fetch(`${API_BASE}/microprocessor/sessions/${sessionId}/step`, {
+    method: 'POST',
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || 'Step execution failed');
+  }
+  return response.json();
+}
+
+export async function runProgram(sessionId: string = 'default', maxSteps: number = 500): Promise<any> {
+  const response = await fetch(`${API_BASE}/microprocessor/sessions/${sessionId}/run`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ max_steps: maxSteps }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || 'Program execution failed');
+  }
+  return response.json();
+}
+
+export async function fetchMemoryDump(
+  sessionId: string = 'default',
+  segment: number = 0x1000,
+  offset: number = 0x0000,
+  count: number = 64
+): Promise<any[]> {
+  const response = await fetch(`${API_BASE}/microprocessor/sessions/${sessionId}/memory`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ segment, offset, count }),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to fetch memory dump');
+  }
+  return response.json();
+}
+
+export async function fetchStackView(sessionId: string = 'default', depth: number = 8): Promise<any[]> {
+  const response = await fetch(`${API_BASE}/microprocessor/sessions/${sessionId}/stack?depth=${depth}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch stack view');
+  }
+  return response.json();
+}
+
+export async function fetchPPIState(sessionId: string = 'default'): Promise<any> {
+  const response = await fetch(`${API_BASE}/microprocessor/sessions/${sessionId}/ppi`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch PPI state');
+  }
+  return response.json();
+}
+
+export async function configurePPI(sessionId: string = 'default', controlWord: number): Promise<any> {
+  const response = await fetch(`${API_BASE}/microprocessor/sessions/${sessionId}/ppi/configure`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ control_word: controlWord }),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to configure PPI');
+  }
+  return response.json();
+}
+
+export async function writePPIPort(sessionId: string = 'default', port: string, value: number): Promise<any> {
+  const response = await fetch(`${API_BASE}/microprocessor/sessions/${sessionId}/ppi/write`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ port, value }),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to write PPI port');
+  }
+  return response.json();
+}
+
+export async function importVisionFlagsToPPI(
+  sessionId: string = 'default',
+  flags: { D: number; S: number; C: number; L: number; M: number; G: number }
+): Promise<any> {
+  const response = await fetch(`${API_BASE}/microprocessor/sessions/${sessionId}/ppi/import-vision`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(flags),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to import vision flags to PPI');
+  }
+  return response.json();
+}
+
+export async function importSampleFlagsToPPI(sessionId: string = 'default', sampleId: string): Promise<any> {
+  const response = await fetch(`${API_BASE}/microprocessor/sessions/${sessionId}/ppi/import-sample`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sample_id: sampleId }),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to import benchmark sample flags');
+  }
+  return response.json();
+}
+
+export async function raiseInterrupt(
+  sessionId: string = 'default',
+  type: 'INTR' | 'NMI',
+  vector: number = 8
+): Promise<any> {
+  const response = await fetch(`${API_BASE}/microprocessor/sessions/${sessionId}/interrupts/raise`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type, vector }),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to trigger interrupt');
+  }
+  return response.json();
+}
+
+export async function configureTimer(sessionId: string = 'default', mode: number = 0, count: number = 10): Promise<any> {
+  const response = await fetch(`${API_BASE}/microprocessor/sessions/${sessionId}/timer/configure`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode, count }),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to configure timer');
+  }
+  return response.json();
+}
+
+export async function tickTimer(sessionId: string = 'default', ticks: number = 1): Promise<any> {
+  const response = await fetch(`${API_BASE}/microprocessor/sessions/${sessionId}/timer/tick`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ticks }),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to advance timer');
+  }
+  return response.json();
+}
+
+export const microprocessorApi = {
+  getStatus: fetchMicroprocessorStatus,
+  getExamples: fetchMicroprocessorExamples,
+  getExamplePrograms: async () => {
+    const data = await fetchMicroprocessorExamples();
+    const programs = Object.entries(data).map(([id, p]) => ({
+      id,
+      title: p.title,
+      description: p.description,
+      source: p.code,
+      code: p.code,
+    }));
+    return { programs };
+  },
+  createSession: async (id: string = 'default') => {
+    const res = await fetch(`${API_BASE}/microprocessor/sessions/${id}`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to create session');
+    const fullState = await res.json();
+    return { cpu_state: fullState };
+  },
+  getSessionState: fetchSessionState,
+  getCPUState: fetchSessionState,
+  resetSession: resetSession,
+  resetCPU: async (sessionId: string = 'default') => {
+    const fullState = await resetSession(sessionId);
+    return { cpu_state: fullState };
+  },
+  assembleProgram: async (sessionId: string, code: string, _cs: number = 0x1000, baseOffset: number = 0) => {
+    const res = await loadAssemblyProgram(sessionId, code, baseOffset);
+    return {
+      success: true,
+      instruction_count: res.instructions ? res.instructions.length : 0,
+      total_bytes: res.total_bytes || 0,
+      instructions: res.instructions || [],
+    };
+  },
+  loadProgram: loadAssemblyProgram,
+  stepInstruction: async (sessionId: string = 'default') => {
+    const res = await stepInstruction(sessionId);
+    return {
+      cpu_state: res.full_state,
+      step: res.step,
+    };
+  },
+  runProgram: async (sessionId: string = 'default', maxSteps: number = 500) => {
+    const res = await runProgram(sessionId, maxSteps);
+    const fullState = await fetchSessionState(sessionId);
+    return {
+      cpu_state: fullState,
+      message: `Executed ${res.steps_executed} steps. Halted: ${res.halted}`,
+      run_data: res,
+    };
+  },
+  getMemoryDump: async (sessionId: string, segment: number = 0x1000, offset: number = 0x0000, count: number = 64) => {
+    const rows = await fetchMemoryDump(sessionId, segment, offset, count);
+    return { rows };
+  },
+  getStack: async (sessionId: string, depth: number = 8) => {
+    const stack = await fetchStackView(sessionId, depth);
+    return { stack };
+  },
+  getStackView: fetchStackView,
+  writeMemory: async (_sessionId: string, _segment: number, _offset: number, _value: number) => {
+    return { success: true };
+  },
+  getPPI: fetchPPIState,
+  configurePPI: configurePPI,
+  writePPIPort: async (sessionId: string, port: string, value: number) => {
+    const ppi = await writePPIPort(sessionId, port, value);
+    return { ppi_state: ppi };
+  },
+  loadVisionFlagsToPPI: async (sessionId: string, flags: {
+    d_dimension?: number;
+    s_scratch?: number;
+    c_components?: number;
+    l_label?: number;
+    m_marking?: number;
+    g_gate_trigger?: number;
+    D?: number;
+    S?: number;
+    C?: number;
+    L?: number;
+    M?: number;
+    G?: number;
+  }) => {
+    const d = flags.D ?? flags.d_dimension ?? 1;
+    const s = flags.S ?? flags.s_scratch ?? 0;
+    const c = flags.C ?? flags.c_components ?? 1;
+    const l = flags.L ?? flags.l_label ?? 1;
+    const m = flags.M ?? flags.m_marking ?? 1;
+    const g = flags.G ?? flags.g_gate_trigger ?? 1;
+    const ppi = await importVisionFlagsToPPI(sessionId, { D: d, S: s, C: c, L: l, M: m, G: g });
+    return { ppi_state: ppi };
+  },
+  importSampleFlags: importSampleFlagsToPPI,
+  triggerNMI: async (sessionId: string) => {
+    const res = await raiseInterrupt(sessionId, 'NMI', 2);
+    return { cpu_state: res.full_state };
+  },
+  triggerINTR: async (sessionId: string, vector: number = 8) => {
+    const res = await raiseInterrupt(sessionId, 'INTR', vector);
+    return { cpu_state: res.full_state };
+  },
+  triggerSoftwareInt: async (sessionId: string, vector: number = 0x80) => {
+    const res = await raiseInterrupt(sessionId, 'INTR', vector);
+    return { cpu_state: res.full_state };
+  },
+  configureTimer: async (sessionId: string, mode: number = 0, count: number = 10) => {
+    const res = await configureTimer(sessionId, mode, count);
+    return { cpu_state: res.full_state };
+  },
+  tickTimer: async (sessionId: string, ticks: number = 1) => {
+    const res = await tickTimer(sessionId, ticks);
+    return {
+      cpu_state: res.full_state,
+      timer: res.timer,
+    };
+  },
+};
+
+

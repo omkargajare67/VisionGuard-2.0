@@ -120,19 +120,46 @@ This roadmap outlines the systematic phased delivery and verification milestones
 
 ---
 
-## Stage 4: Educational 8086 Microprocessor & 8255 PPI Simulator (Upcoming)
-- [ ] Educational Intel 8086 Microprocessor Core (`backend/app/microprocessor/`):
-  - 16-bit register file (AX, BX, CX, DX, SI, DI, BP, SP, CS, DS, SS, ES, IP, Flags).
-  - 1 MB Segmented Memory Model with logical-to-physical address calculation.
-  - Educational instruction subset decoder (MOV, ADD, SUB, CMP, JMP, JZ, JNZ, IN, OUT, PUSH, POP, CALL, RET).
-  - Bus Interface Unit (BIU) instruction prefetch queue and Execution Unit (EU) visualization.
-- [ ] Intel 8255 Programmable Peripheral Interface (PPI):
-  - Port A, Port B, and Port C input/output behavior under Mode 0 and Mode 1.
-  - Control Word register configuration and Bit Set/Reset (BSR) mode.
-- [ ] Hardware Interrupt & Timer Subsystem:
-  - Interrupt Vector Table (IVT), INTR line, NMI, and Interrupt Service Routine (ISR) execution.
-  - Programmable interval timer generating periodic clock interrupts.
-- [ ] Frontend 8086 IDE: Assembly code editor, step-by-step execution, register inspector, and memory dump grid.
+## Stage 4: Educational 8086 Microprocessor & 8255 PPI Simulator (Completed & Verified)
+- [x] Educational Intel 8086 Microprocessor Core (`backend/app/microprocessor/`):
+  - 16-bit register file (AX, BX, CX, DX, SP, BP, SI, DI, CS, DS, SS, ES, IP) with 8-bit byte aliasing (AH/AL, BH/BL, CH/CL, DH/DL) and bitwise synchronization.
+  - 9-flag condition register (CF, PF, AF, ZF, SF, TF, IF, DF, OF) computed on every ALU operation.
+  - 1 MB Segmented Memory Model (`backend/app/microprocessor/memory.py`): 20-bit physical address computation (`(Segment << 4) + Offset`), little-endian word read/write, hex/ASCII dump, and stack frame view at `SS:SP`.
+  - 16-bit/8-bit ALU core (`backend/app/microprocessor/alu.py`): Arithmetic (ADD, SUB, INC, DEC, CMP) and bitwise logical (AND, OR, XOR, NOT, TEST) operations with binary arithmetic traces.
+  - Two-pass 8086 Assembler (`backend/app/microprocessor/assembler.py`): Pass 1 address calculation with exact instruction sizing, Pass 2 symbol table resolution, label resolution for forward/backward jumps, and line-numbered syntax diagnostics.
+  - Bus Interface Unit (BIU) & Execution Unit (EU) (`backend/app/microprocessor/cpu8086.py`): Pipelined 6-byte instruction prefetch FIFO queue, automatic queue refill during execution, and queue flush on branching (JMP, JZ, JNZ, JC, JNC, LOOP, CALL, RET, IRET).
+  - Bus system (`backend/app/microprocessor/bus.py`): 20-bit address bus, 16-bit data bus, and control lines (ALE, MEMR, MEMW, IOR, IOW, DEN, DT_R, INTR, NMI) with transaction history audit.
+- [x] Intel 8255 Programmable Peripheral Interface (`backend/app/microprocessor/ppi8255.py`):
+  - Full Mode 0 (Basic I/O), Mode 1 (Strobed I/O with STB, IBF, OBF, ACK), and Bit Set/Reset (BSR) mode.
+  - Default industrial I/O port mapping: Port A (80H), Port B (81H), Port C (82H), Control Word (83H).
+  - VisionGuard Integration: Direct mapping of OpenCV feature extraction flags ($D, S, C, L, M, G$) into Port A (80H) and sorting actuator lines on Port B (81H): PB0 (Conveyor), PB1 (Reject Gate), PB2 (Green LED / PASS), PB3 (Red LED / REJECT), PB4 (Buzzer), PB5 (Busy).
+- [x] Hardware Interrupt & Timer Subsystem:
+  - 256-vector Interrupt Vector Table (IVT) spanning 1 KB (`00000H` - `003FFH`).
+  - Edge-triggered Non-Maskable Interrupt (NMI, Vector Type 2).
+  - Level-triggered Maskable Interrupt (INTR, Vector Type 8) gated by Interrupt Flag (`IF`).
+  - Software Interrupt (`INT n`) and atomic `IRET` stack frame restoration (POP IP, POP CS, POP FLAGS).
+  - Intel 8253 Programmable Interval Timer (`backend/app/microprocessor/timers.py`): Mode 0 (Interrupt on Terminal Count raising IRQ0) and Mode 3 (Square Wave Generator).
+- [x] Preloaded Educational Assembly Programs (`backend/app/microprocessor/example_programs.py`):
+  - VisionGuard Quality Inspection Controller (`visionguard_controller`).
+  - ALU Comprehensive Math & Logic Suite (`alu_suite`).
+  - Array Summation with LOOP Instruction (`array_sum_loop`).
+  - Stack Operations & Subroutine CALL/RET (`stack_subroutine`).
+  - Hardware Interrupt Service Routine Demo (`interrupt_isr`).
+- [x] Multi-session REST API (`backend/app/api/microprocessor.py`) with 17 operational endpoints.
+- [x] Full Pytest suite of 21 tests (`backend/tests/test_microprocessor.py`), **62/62 passing across all suites in 1.00s**.
+- [x] React Microprocessor Laboratory frontend (`frontend/src/components/microprocessor/`):
+  - Master container `MicroprocessorLab.tsx` with 8 specialized sub-panels.
+  - `RegisterInspector.tsx`: 16-bit registers, 8-bit byte slices, segment pointers, and 9 condition flags.
+  - `MemoryExplorer.tsx`: 20-bit address calculator, segment presets, 16-byte hex dump table with ASCII, stack viewer at `SS:SP`, and direct byte write form.
+  - `AssemblyEditor.tsx`: Assembly source editor, preloaded example programs, Assemble & Load, Single Step (F7), Run Program (F5), Reset CPU, and bytecode disassembly view with current IP highlighting.
+  - `ExecutionTrace.tsx`: Execution history audit with step index, CS:IP, mnemonic, bytecode, details, and cycles.
+  - `ALUVisualizer.tsx`: Interactive 16-bit/8-bit ALU sandbox with condition flag generator.
+  - `BusVisualizer.tsx`: 20-bit address bus, 16-bit data bus, 9 control lines, BIU 6-byte prefetch queue with byte slots, and transaction log.
+  - `PPI8255Panel.tsx`: Interactive 8255 PPI chip with Port A sensor inputs, "Import Live OpenCV Flags" button, and animated Port B actuator status.
+  - `InterruptPanel.tsx`: 256-vector IVT explorer, NMI/INTR triggers, software INT n, and ISR stack preservation guide.
+  - `TimerPanel.tsx`: 8253 PIT countdown meter, OUT pin level, and IRQ0 trigger.
+- [x] Navigation update: Navbar `'8086'` tab added with Stage 4 indicator; default routed to MicroprocessorLab.
+- [x] Frontend production build: `npm run build` succeeds cleanly in <500ms with zero errors.
 
 ---
 

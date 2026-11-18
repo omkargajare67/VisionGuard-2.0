@@ -46,19 +46,27 @@ VisionGuard 2.0 is an academic Digital Electronics and Microprocessors (DEAM) ca
 │   ├── requirements.txt            # Backend-specific package constraints
 │   ├── tests/
 │   │   ├── __init__.py
-│   │   ├── test_health.py          # Pytest suite for baseline API endpoints
-│   │   └── test_vision.py          # 17 automated tests for vision & CV pipeline
+│   │   ├── test_health.py          # Pytest suite for baseline API endpoints (2 tests)
+│   │   ├── test_vision.py          # Automated tests for vision & CV pipeline (17 tests)
+│   │   ├── test_deam.py            # Automated tests for digital electronics (22 tests)
+│   │   └── test_microprocessor.py  # Automated tests for 8086 CPU & 8255 PPI (21 tests)
 │   └── app/
 │       ├── __init__.py
-│       ├── main.py                 # FastAPI application root & CORS
+│       ├── main.py                 # FastAPI application root & router registration
 │       ├── api/
 │       │   ├── __init__.py
-│       │   ├── health.py           # GET /api/health implementation
+│       │   ├── health.py           # GET /api/health implementation (Stage 4)
 │       │   ├── samples.py          # GET /api/samples & /api/samples/{id}/image
-│       │   └── inspection.py       # POST /api/inspection/analyze[-sample]
+│       │   ├── inspection.py       # POST /api/inspection/analyze[-sample]
+│       │   ├── deam.py             # Logic, Boolean, K-Map, Combinational, Sequential APIs
+│       │   └── microprocessor.py   # 8086 CPU, memory, registers, bus, PPI, IVT, timers
 │       ├── models/
 │       │   ├── __init__.py
-│       │   └── schemas.py          # Pydantic schema contracts
+│       │   └── schemas.py          # Pydantic schema contracts for Stages 1-4
+│       ├── services/
+│       │   ├── __init__.py
+│       │   ├── deam_service.py     # Stage 3 logic computation service
+│       │   └── microprocessor_service.py # Stage 4 session-based 8086 CPU service
 │       ├── vision/                 # [Stage 2] OpenCV inspection engine
 │       │   ├── __init__.py
 │       │   ├── synthetic_samples.py# Procedural industrial workpiece generator
@@ -76,6 +84,18 @@ VisionGuard 2.0 is an academic Digital Electronics and Microprocessors (DEAM) ca
 │       │   ├── fsm.py              # Moore production FSM (6 states)
 │       │   └── inspection_decision.py # Vision flags -> Combinational Boolean Decision
 │       ├── microprocessor/         # [Stage 4] 8086 CPU & 8255 PPI simulator
+│       │   ├── __init__.py
+│       │   ├── registers8086.py    # 16-bit register model with 8-bit aliasing & FLAGS
+│       │   ├── memory.py           # 1 MB segmented physical memory & stack
+│       │   ├── alu.py              # 16-bit / 8-bit ALU with conditional flag generation
+│       │   ├── instruction_set.py  # Educational 8086 instruction set architecture
+│       │   ├── assembler.py        # Two-pass assembler with forward-reference resolution
+│       │   ├── bus.py              # 20-bit address, 16-bit data & control bus
+│       │   ├── ppi8255.py          # Intel 8255 PPI (Mode 0, Mode 1, BSR, VisionGuard I/O)
+│       │   ├── interrupts.py       # 256-vector IVT, NMI, INTR, INT n, and IRET
+│       │   ├── timers.py           # 8253 PIT with Mode 0 (Terminal Count) & Mode 3
+│       │   ├── cpu8086.py          # Integrated CPU unifying BIU, EU, Bus, PPI, Timers
+│       │   └── example_programs.py # 5 preloaded assembly demos including VisionGuard
 │       └── simulation/             # [Stage 5] Conveyor kinematics & actuators
 └── frontend/
     ├── package.json
@@ -86,11 +106,11 @@ VisionGuard 2.0 is an academic Digital Electronics and Microprocessors (DEAM) ca
         ├── App.tsx                 # Main dashboard container with Tab Navigation
         ├── index.css               # Tailwind CSS entry
         ├── types/
-        │   └── index.ts            # TypeScript interfaces (Vision + DEAM)
+        │   └── index.ts            # TypeScript interfaces (Vision + DEAM + 8086)
         ├── services/
-        │   └── api.ts              # Typed API communication service
+        │   └── api.ts              # Typed API communication service & microprocessorApi
         └── components/
-            ├── Navbar.tsx          # Industrial header with Stage 3 indicator
+            ├── Navbar.tsx          # Industrial header with Stage 4 indicator & 8086 Tab
             ├── HealthMonitor.tsx   # Real-time health diagnostic card
             ├── ArchitectureOverview.tsx # 5-stage roadmap & DEAM mapping
             ├── DiagnosticLog.tsx   # Request telemetry & latency stream
@@ -101,16 +121,27 @@ VisionGuard 2.0 is an academic Digital Electronics and Microprocessors (DEAM) ca
             │   ├── DefectMetrics.tsx      # DEAM binary logic flags table
             │   ├── ProcessingPipeline.tsx # Sequential OpenCV filters visualizer
             │   └── ImageComparison.tsx    # Split / side-by-side comparison
-            └── deam/               # [Stage 3] DEAM Digital Electronics Lab
-                ├── DeamLaboratory.tsx     # Master laboratory portal & navigation
-                ├── InspectionDecisionBridge.tsx # Novelty Vision-to-Logic bridge
-                ├── LogicGatesLab.tsx      # Interactive 7-gate schematic & tables
-                ├── BooleanLogicLab.tsx    # Expression evaluator & Boolean laws
-                ├── KMapVisualizer.tsx     # Gray-code 2/3/4-variable K-Map solver
-                ├── CombinationalLab.tsx   # Adders, MUX, Decoders, Encoders, Parity
-                ├── FlipFlopLab.tsx        # SR, JK, D, T clock edge-triggered cells
-                ├── RegisterCounterLab.tsx # Shift registers & synchronous counters
-                └── FSMVisualizer.tsx      # Moore state machine trajectory & outputs
+            ├── deam/               # [Stage 3] DEAM Digital Electronics Lab
+            │   ├── DeamLaboratory.tsx     # Master laboratory portal & navigation
+            │   ├── InspectionDecisionBridge.tsx # Vision-to-Logic bridge
+            │   ├── LogicGatesLab.tsx      # Interactive 7-gate schematic & tables
+            │   ├── BooleanLogicLab.tsx    # Expression evaluator & Boolean laws
+            │   ├── KMapVisualizer.tsx     # Gray-code 2/3/4-variable K-Map solver
+            │   ├── CombinationalLab.tsx   # Adders, MUX, Decoders, Encoders, Parity
+            │   ├── FlipFlopLab.tsx        # SR, JK, D, T clock edge-triggered cells
+            │   ├── RegisterCounterLab.tsx # Shift registers & synchronous counters
+            │   └── FSMVisualizer.tsx      # Moore state machine trajectory & outputs
+            └── microprocessor/     # [Stage 4] 8086 Microprocessor & 8255 PPI Lab
+                ├── MicroprocessorLab.tsx  # Master tabbed laboratory container
+                ├── RegisterInspector.tsx  # 16-bit registers, 8-bit aliases, 9 flags
+                ├── MemoryExplorer.tsx     # 20-bit addressing, hex dump, stack viewer
+                ├── AssemblyEditor.tsx     # Source editor, assembler, step/run/reset
+                ├── ExecutionTrace.tsx     # Pipeline execution history & cycle audit
+                ├── ALUVisualizer.tsx      # Interactive ALU sandbox & condition flags
+                ├── BusVisualizer.tsx      # 20-bit address/data bus & BIU prefetch queue
+                ├── PPI8255Panel.tsx       # 8255 PPI with live VisionGuard sensor/actuator
+                ├── InterruptPanel.tsx     # 256-vector IVT explorer, NMI/INTR, ISR flow
+                └── TimerPanel.tsx         # 8253 PIT timer with countdown meter & IRQ0
 ```
 
 ---
@@ -162,7 +193,7 @@ PYTHONPATH="." ./backend/.venv/bin/uvicorn backend.app.main:app --reload --host 
 ```
 - Interactive API Documentation (Swagger): [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 - Health Check Endpoint: [http://127.0.0.1:8000/api/health](http://127.0.0.1:8000/api/health)
-- Sample Catalog Endpoint: [http://127.0.0.1:8000/api/samples](http://127.0.0.1:8000/api/samples)
+- Microprocessor Status Endpoint: [http://127.0.0.1:8000/api/microprocessor/status](http://127.0.0.1:8000/api/microprocessor/status)
 
 ### 4.2 Running the Frontend Development Server
 In a separate terminal:
@@ -174,7 +205,7 @@ npm run dev
 
 ---
 
-## 5. Automated Testing & QA Verification (Stage 3)
+## 5. Automated Testing & QA Verification (Stage 4)
 
 Run the backend test suite:
 ```bash
@@ -183,24 +214,26 @@ $env:PYTHONPATH="."
 ```
 
 ### 5.1 Verification Results
-- **41 of 41 automated tests passing** (100% pass rate in ~0.92s) across:
-  - `test_deam.py`: **22 tests** covering logic gates, De Morgan's duality, Boolean expression evaluation, K-Map (2, 3, and 4 variables with don't cares), Half Adder, Full Adder, Multiplexers (2:1, 4:1, 8:1), Decoders (2:4, 3:8), Priority Encoders (4:2, 8:3), Parity generators & error checkers, Flip-Flops (SR, JK, D, T), Shift Registers (SISO, SIPO, PISO, PIPO), Counters (Up, Down, Modulo-N), Moore FSM lifecycle & error handling, and Vision-to-Logic combinational decision bridge.
+- **62 of 62 automated tests passing** (100% pass rate in ~1.00s) across:
+  - `test_microprocessor.py`: **21 tests** verifying 16-bit registers, 8-bit byte aliasing bitwise integrity, 20-bit physical memory addressing, little-endian word storage, ALU arithmetic and logic operations, status flag generation (CF, PF, AF, ZF, SF, OF), two-pass assembler with forward references, BIU 6-byte instruction prefetch queue and branch flushes, Intel 8255 PPI Mode 0 and BSR modes, 256-vector IVT interrupt handling with IRET restoration, 8253 PIT countdown and IRQ0 generation, and complete assembly execution of the VisionGuard quality inspection controller for nominal PASS (VG-001) and defective REJECT (VG-004) samples.
+  - `test_deam.py`: **22 tests** covering logic gates, De Morgan's duality, Boolean expression evaluation, K-Map (2, 3, and 4 variables with don't cares), Adders, Multiplexers, Decoders, Priority Encoders, Parity generators & error checkers, Flip-Flops, Shift Registers, Synchronous Counters, Moore FSM lifecycle, and Vision-to-Logic decision bridge.
   - `test_vision.py`: **17 tests** verifying procedural synthetic generation, classical CV pipelines, and blind defect identification on all 6 benchmarks (VG-001 through VG-006).
   - `test_health.py`: **2 tests** checking system status and stage telemetry.
-- **Vision-to-Logic Integration**: Verified that OpenCV binary flags $D, S, C, L, M, G$ synthesize hardware signals:
-  - $F = S \lor \neg C \lor \neg L \lor \neg M \lor \neg G$
-  - $\text{PASS} = D \land \neg F$
-  - $\text{REJECT} = D \land F$
-  - Complete gate execution trace matching physical propagation delay characteristics (~15 ns).
 - **Frontend Production Build**: `npm run build` succeeds cleanly in <500ms with zero TypeScript errors.
 
-### 5.2 Implemented vs. Tested vs. Remaining Limitations
-
-| Category | Status / Details |
-|---|---|
-| **Implemented Functionality** | **Stage 1**: Foundation & diagnostics. **Stage 2**: OpenCV classical inspection engine. **Stage 3**: Full DEAM Laboratory with 8 interactive modules: Logic Gates, Boolean Algebra & Theorems, Gray-code K-Map Minimizer, Combinational Circuits (Adders, MUX, Decoders, Encoders, Parity), Sequential Flip-Flops (SR, JK, D, T), Shift Registers & Synchronous Counters, Moore Production Line FSM, and Vision-to-Logic Inspection Decision Bridge. |
-| **Tested Functionality** | 41 automated Pytest test cases, Gray-code adjacency & Quine-McCluskey correctness, adder truth tables, FSM transition validity & emergency stop, parity bit-flip error detection, and mutual exclusivity of PASS/REJECT sorting signals. |
-| **Scope Boundary** | Stage 3 is fully finalized. Stage 4 will interface these digital signals and FSM states with the Intel 8086 CPU and Intel 8255 PPI ports. |
+### 5.2 Capstone Integration: VisionGuard 8086 Assembly Controller
+The simulation features an automated inspection program running on the virtual 8086 CPU:
+1. Port A (80H) reads OpenCV binary sensor flags: $D, S, C, L, M, G$.
+2. Nominal sample VG-001 writes $00111101\text{B} = 3\text{DH} = 61_{10}$ to Port A.
+3. The 8086 CPU executes:
+   - `IN AL, 80H`: Reads Port A into AL.
+   - `TEST AL, 20H` / `JZ NO_PRODUCT`: Verifies product presence at gate.
+   - `MOV BL, AL` / `AND BL, 3CH` / `CMP BL, 3CH`: Checks components, label, and marking.
+   - `TEST AL, 02H` / `JNZ DEFECT_REJECTED`: Checks for surface scratches.
+   - `OUT 81H, AL`: Emits actuator sorting signals on Port B (81H).
+4. Output signals on Port B:
+   - PASS: $05\text{H}$ (PB0 Conveyor Motor + PB2 Green LED).
+   - REJECT: $1A\text{H}$ (PB1 Reject Diverter + PB3 Red LED + PB4 Buzzer).
 
 ---
 
@@ -210,5 +243,5 @@ $env:PYTHONPATH="."
 - **Stage 2 (Completed)**: OpenCV Vision Inspection Engine & Synthetic Sample Generator (6-sample benchmark generator, classical CV pipeline, multipart upload, webcam acquisition, annotated overlay, DEAM binary flags).
 - **Stage 2.5 (Completed)**: Stabilization & Quality Assurance (Webcam lifecycle fixes, ref-based track cleanup, blind test verification, API validation).
 - **Stage 3 (Completed)**: DEAM Digital Electronics Simulation Engine (Interactive Digital Logic Lab, Boolean Algebra, Gray-Code K-Map Minimizer, Adders, Multiplexers, Decoders, Priority Encoders, Parity Gen/Check, Flip-Flops, Shift Registers, Synchronous Counters, Moore FSM, and Vision-to-Logic Hardware Decision Bridge).
-- **Stage 4 (Upcoming)**: Educational 8086 Microprocessor & 8255 PPI Simulator.
+- **Stage 4 (Completed)**: Educational Intel 8086 Microprocessor & 8255 PPI Simulator (16-bit register architecture, 8-bit aliasing, 1 MB segmented physical memory, ALU condition flags, two-pass assembler, BIU 6-byte prefetch queue, 8255 PPI Mode 0/1/BSR, 256-vector IVT, 8253 PIT timer, and full React Microprocessor Laboratory).
 - **Stage 5 (Upcoming)**: Full Virtual Production Line & System Integration.

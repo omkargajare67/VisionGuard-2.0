@@ -324,3 +324,260 @@ export interface InspectionDecisionResult {
   gate_trace: GateTraceStep[];
   fault_reasons: string[];
 }
+
+// -----------------------------------------------------------------------------
+// STAGE 4: INTEL 8086 MICROPROCESSOR & INTEL 8255 PPI TYPES
+// -----------------------------------------------------------------------------
+
+export interface FlagsState {
+  value: number;
+  hex: string;
+  binary: string;
+  flags: {
+    CF: number;
+    PF: number;
+    AF: number;
+    ZF: number;
+    SF: number;
+    TF: number;
+    IF: number;
+    DF: number;
+    OF: number;
+  };
+}
+
+export interface GeneralRegister {
+  hex: string;
+  dec: number;
+  bin: string;
+  H: string;
+  L: string;
+}
+
+export interface PointerRegister {
+  hex: string;
+  dec: number;
+  bin: string;
+}
+
+export interface SegmentRegister {
+  hex: string;
+  dec: number;
+  base_physical: string;
+}
+
+export interface Registers8086State {
+  general: {
+    AX: GeneralRegister;
+    BX: GeneralRegister;
+    CX: GeneralRegister;
+    DX: GeneralRegister;
+  };
+  pointers: {
+    SP: PointerRegister;
+    BP: PointerRegister;
+    SI: PointerRegister;
+    DI: PointerRegister;
+  };
+  segments: {
+    CS: SegmentRegister;
+    DS: SegmentRegister;
+    SS: SegmentRegister;
+    ES: SegmentRegister;
+  };
+  special: {
+    IP: { hex: string; dec: number; physical: string };
+    FLAGS: FlagsState;
+  };
+}
+
+export interface InstructionDTO {
+  mnemonic: string;
+  offset: string;
+  size: number;
+  bytecode: string[];
+  bytecode_raw: number[];
+  source: string;
+  line_number: number;
+  operands: Array<{
+    type: string;
+    value: any;
+    is_16bit: boolean;
+    raw: string;
+  }>;
+}
+
+export interface MemoryDumpRow {
+  segment: string;
+  offset: string;
+  physical_address: string;
+  bytes: number[];
+  hex_view: string;
+  ascii_view: string;
+}
+
+export interface StackSlot {
+  depth_index: number;
+  offset: string;
+  physical: string;
+  word_value: number;
+  hex_word: string;
+  low_byte: string;
+  high_byte: string;
+}
+
+export interface BusState {
+  address_bus: string;
+  data_bus: string;
+  control_signals: Record<string, number>;
+  last_transaction: string;
+  cycle_count: number;
+  recent_history: Array<{
+    cycle: number;
+    type: string;
+    address: string;
+    data: string;
+    control_signals: Record<string, number>;
+    description: string;
+  }>;
+}
+
+export interface PPIState {
+  base_address: string;
+  ports_mapping: {
+    PORT_A: string;
+    PORT_B: string;
+    PORT_C: string;
+    CONTROL: string;
+  };
+  control_word: {
+    hex: string;
+    binary: string;
+    last_bsr: string | null;
+  };
+  configuration: {
+    port_a_direction: string;
+    port_b_direction: string;
+    port_c_upper_direction: string;
+    port_c_lower_direction: string;
+    group_a_mode: string;
+    group_b_mode: string;
+  };
+  port_values: {
+    PORT_A: { val: number; hex: string; bin: string };
+    PORT_B: { val: number; hex: string; bin: string };
+    PORT_C: { val: number; hex: string; bin: string };
+  };
+  handshake_signals: {
+    STB_A: number;
+    IBF_A: number;
+    INTR_A: number;
+    OBF_B: number;
+    ACK_B: number;
+    INTR_B: number;
+  };
+  actuators: {
+    raw_byte: number;
+    hex: string;
+    binary: string;
+    conveyor_motor: number;
+    reject_gate: number;
+    green_led: number;
+    red_led: number;
+    buzzer: number;
+    busy: number;
+    decision: 'PASS' | 'REJECT' | 'IDLE';
+  };
+}
+
+export interface TimerState {
+  total_ticks: number;
+  channel0: {
+    channel: number;
+    mode: string;
+    initial_count: number;
+    current_count: number;
+    out_pin: number;
+    terminal_count: boolean;
+    enabled: boolean;
+  };
+  ticks_advanced?: number;
+  triggered_interrupts?: number;
+}
+
+export interface CPUFullState {
+  session_id: string;
+  step_count: number;
+  halted: boolean;
+  registers: Registers8086State;
+  flags: FlagsState;
+  biu: {
+    prefetch_queue: string[];
+    queue_capacity: number;
+    queue_occupancy: number;
+    ip_fetch: string;
+    physical_fetch: string;
+  };
+  bus: BusState;
+  ppi: PPIState;
+  timers: TimerState;
+  current_instruction: InstructionDTO | null;
+  cycles?: number;
+  prefetch_queue?: number[];
+  execution_trace?: ExecutionTraceItem[];
+}
+
+export interface ExecutionTraceItem {
+  step: number;
+  address: string;
+  instruction: string;
+  bytecode: string;
+  details: string;
+  cycles: number;
+}
+
+export interface StepResultDTO {
+  step_number: number;
+  type: string;
+  instruction_text: string;
+  mnemonic: string;
+  address: string;
+  physical_address: string;
+  bytecode: string[];
+  previous_registers: Registers8086State;
+  current_registers: Registers8086State;
+  previous_flags: Record<string, number>;
+  current_flags: Record<string, number>;
+  alu_trace: {
+    operation: string;
+    is_16bit: boolean;
+    operand1: number;
+    operand2: number | null;
+    result: number;
+    hex_op1: string;
+    hex_op2: string | null;
+    hex_result: string;
+    bin_op1: string;
+    bin_op2: string | null;
+    bin_result: string;
+    calculation_summary: string;
+    previous_flags: Record<string, number>;
+    current_flags: Record<string, number>;
+  } | null;
+  bus_transactions: Array<any>;
+  queue_before: string[];
+  queue_after: string[];
+  jump_taken?: boolean;
+  halted: boolean;
+  status: string;
+}
+
+export interface ExampleProgram {
+  id?: string;
+  title: string;
+  description: string;
+  code: string;
+  source?: string;
+}
+
+

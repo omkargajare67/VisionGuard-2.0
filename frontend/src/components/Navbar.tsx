@@ -1,11 +1,11 @@
 import React from 'react';
-import { Cpu, ShieldCheck, Eye, Activity, Binary } from 'lucide-react';
+import { Cpu, ShieldCheck, Eye, Activity, Binary, Terminal } from 'lucide-react';
 
 interface NavbarProps {
   backendOnline: boolean | null;
   stage: number;
-  activeTab: 'monitor' | 'vision' | 'deam';
-  onSelectTab: (tab: 'monitor' | 'vision' | 'deam') => void;
+  activeTab: '8086' | 'deam' | 'vision' | 'monitor';
+  onSelectTab: (tab: '8086' | 'deam' | 'vision' | 'monitor') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -36,10 +36,22 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Center Navigation Tabs */}
-        <div className="flex items-center p-1 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+        <div className="flex items-center p-1 rounded-xl bg-slate-950 border border-slate-800 text-xs overflow-x-auto">
+          <button
+            onClick={() => onSelectTab('8086')}
+            className={`px-3 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap ${
+              activeTab === '8086'
+                ? 'bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Terminal className="w-3.5 h-3.5" />
+            <span>8086 & PPI (Stage 4)</span>
+          </button>
+
           <button
             onClick={() => onSelectTab('deam')}
-            className={`px-3.5 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all ${
+            className={`px-3 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap ${
               activeTab === 'deam'
                 ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-600/20'
                 : 'text-slate-400 hover:text-slate-200'
@@ -51,7 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={() => onSelectTab('vision')}
-            className={`px-3.5 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all ${
+            className={`px-3 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap ${
               activeTab === 'vision'
                 ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-600/20'
                 : 'text-slate-400 hover:text-slate-200'
@@ -63,7 +75,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={() => onSelectTab('monitor')}
-            className={`px-3.5 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all ${
+            className={`px-3 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap ${
               activeTab === 'monitor'
                 ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-600/20'
                 : 'text-slate-400 hover:text-slate-200'
@@ -104,7 +116,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <div className="flex items-center space-x-1 text-xs text-slate-500">
             <ShieldCheck className="w-4 h-4 text-cyan-400" />
-            <span>OpenCV 5.1</span>
+            <span>Intel 8086 & 8255</span>
           </div>
         </div>
       </div>

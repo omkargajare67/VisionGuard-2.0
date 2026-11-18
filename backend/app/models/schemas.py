@@ -216,3 +216,65 @@ class InspectionDecisionFromFlagsRequest(BaseModel):
     L: Optional[int] = Field(None, ge=0, le=1)
     M: Optional[int] = Field(None, ge=0, le=1)
     G: Optional[int] = Field(None, ge=0, le=1)
+
+
+# -----------------------------------------------------------------------------
+# STAGE 4: 8086 MICROPROCESSOR & 8255 PPI SCHEMAS
+# -----------------------------------------------------------------------------
+
+class AssemblyLoadRequest(BaseModel):
+    code: str = Field(..., description="8086 assembly source code")
+    base_offset: int = Field(0x0000, ge=0, le=0xFFFF, description="Offset in code segment to load program")
+
+
+class RunExecutionRequest(BaseModel):
+    max_steps: int = Field(500, ge=1, le=5000, description="Max instructions to execute before stopping")
+
+
+class MemoryDumpRequest(BaseModel):
+    segment: int = Field(0x1000, ge=0, le=0xFFFF)
+    offset: int = Field(0x0000, ge=0, le=0xFFFF)
+    count: int = Field(64, ge=16, le=512)
+
+
+class PPIConfigureRequest(BaseModel):
+    control_word: int = Field(..., ge=0, le=255, description="8-bit control word byte")
+
+
+class PPIWriteRequest(BaseModel):
+    port: str = Field(..., examples=["A", "B", "C"])
+    value: int = Field(..., ge=0, le=255)
+
+
+class PPIImportVisionRequest(BaseModel):
+    d: Optional[int] = Field(None, ge=0, le=1)
+    s: Optional[int] = Field(None, ge=0, le=1)
+    c: Optional[int] = Field(None, ge=0, le=1)
+    l: Optional[int] = Field(None, ge=0, le=1)
+    m: Optional[int] = Field(None, ge=0, le=1)
+    g: Optional[int] = Field(None, ge=0, le=1)
+    D: Optional[int] = Field(None, ge=0, le=1)
+    S: Optional[int] = Field(None, ge=0, le=1)
+    C: Optional[int] = Field(None, ge=0, le=1)
+    L: Optional[int] = Field(None, ge=0, le=1)
+    M: Optional[int] = Field(None, ge=0, le=1)
+    G: Optional[int] = Field(None, ge=0, le=1)
+
+
+class PPIImportSampleRequest(BaseModel):
+    sample_id: str = Field("VG-001", examples=["VG-001", "VG-002", "VG-003", "VG-004", "VG-005", "VG-006"])
+
+
+class InterruptRaiseRequest(BaseModel):
+    type: str = Field("INTR", examples=["INTR", "NMI"])
+    vector: int = Field(8, ge=0, le=255, examples=[8, 9, 0x80])
+
+
+class TimerConfigureRequest(BaseModel):
+    mode: int = Field(0, ge=0, le=3, description="0 = Terminal Count, 3 = Square Wave")
+    count: int = Field(10, ge=1, le=65535, description="Initial countdown value")
+
+
+class TimerTickRequest(BaseModel):
+    ticks: int = Field(1, ge=1, le=1000, description="Clock ticks to advance")
+
