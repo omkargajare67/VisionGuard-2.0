@@ -23,6 +23,7 @@ class ProductStatus:
     REJECTED = "REJECTED"
     EXITED = "EXITED"
     FAULT = "FAULT"
+    ERROR = "ERROR"
 
 
 # -----------------------------------------------------------------------------

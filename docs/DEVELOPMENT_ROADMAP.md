@@ -190,3 +190,43 @@ This roadmap outlines the systematic phased delivery and verification milestones
   - `FaultInjectionPanel.tsx`: Industrial fault injection (Conveyor Jam, Sensor Blinding, Gate Pneumatic Loss) and recovery testing.
 - [x] Navigation update: Navbar `'production'` tab added with Stage 5 badge; default routed to ProductionLineDashboard.
 - [x] Frontend production build: `npm run build` succeeds cleanly in <600ms with zero errors.
+
+---
+
+## Final Stabilisation & Quality Assurance (Completed & Verified)
+
+### Implemented Enhancements & Bug Fixes
+- [x] **Frontend/Backend State Contract Normalization**:
+  - Implemented `running`, `is_running`, `paused`, and `is_paused` property duality on `VirtualConveyor`.
+  - Exported both hardware IDs (`IR-01`, `IR-02`, `IR-03`, `EXIT-01`) and readable identifiers (`ir_sensor_1`, etc.) from `SensorNetwork`.
+  - Harmonized top-level API payload with `line_state`, `controller_mode`, `fault_state`, and `simulation_tick`.
+  - Normalized REST API routing to preserve `/api/production-line/status` alongside flat alias routes (`/state`, `/control/*`, `/products/*`, `/simulation/tick`).
+- [x] **Simulation Loop & Conveyor Kinematics Decoupling**:
+  - Decoupled frontend tick loop condition from strict string match with `LineState.CONVEYOR_MOVEMENT`.
+  - Simulation loop reliably progresses dwell ticks during active optical alignment without stalling.
+- [x] **Photoelectric Sensor Edge Detection**:
+  - Eliminated premature `clear()` resets on each tick.
+  - Implemented true digital hysteresis: `rising_edge` and `falling_edge` detection to prevent duplicate event spamming when a workpiece remains in a detection zone.
+- [x] **Elimination of Silent Inspection Fallback**:
+  - Removed silent `VG-001` substitution fallback on inspection station errors.
+  - Strict validation of synthetic sample IDs and multipart payloads; sets `product.status = ProductStatus.ERROR` and transitions line controller to `LineState.ERROR` on corrupt payloads or unhandled exceptions.
+- [x] **Multi-Session Isolation**:
+  - Frontend generates cryptographically random session IDs stored in `sessionStorage`.
+  - Mode B creates dedicated, isolated microprocessor CPU sessions `prod_ctrl_{session_id}` in `MicroprocessorService`.
+- [x] **Intel 8086 & 8255 PPI Sorting Integrity (Mode B)**:
+  - Configured 8255 PPI with Control Word `0x90` (Port A in, Port B out).
+  - Synchronized Port A ($80\text{H}$) optical flags and latched Port B ($81\text{H}$) actuator signals ($05\text{H}$ for PASS, $1A\text{H}$ for REJECT).
+  - Strictly raises error when CPU fails to halt or execute, preventing silent fallback to Mode A.
+- [x] **Product Lifecycle & Diverter Guards**:
+  - Prohibited product routing at sorting station without verified inspection status.
+  - Enforced single-routing latch (`has_been_routed`) preventing duplicate counter increments.
+  - Implemented trailing product spacing ($10.0$ units) and queue collision avoidance.
+- [x] **Emergency Stop Hardware Interlocks**:
+  - Conveyor motor explicitly checks `emergency_stopped` to prevent restart until an operator reset.
+  - Blocked workpiece addition during emergency stop.
+
+### Testing & Verification Results
+- **Automated Backend Test Suite**: **95 of 95 tests passing (100%)** across 6 test suites in 1.61s.
+- **Dedicated Final Integration Test Suite**: 16 new comprehensive tests (`backend/tests/test_final_integration.py`).
+- **Frontend Production Build**: Clean `npm run build` in 579ms with zero errors.
+- **Detailed Verification Report**: See [docs/FINAL_QA_REPORT.md](file:///d:/DEAM%20CP/docs/FINAL_QA_REPORT.md).

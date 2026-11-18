@@ -611,13 +611,17 @@ export interface ProductDTO {
 }
 
 export interface ConveyorState {
-  is_running: boolean;
-  is_paused: boolean;
+  running: boolean;
+  paused: boolean;
+  emergency_stopped: boolean;
   speed: number;
   direction: string;
   total_distance: number;
-  total_ticks: number;
-  emergency_stopped: boolean;
+  is_running?: boolean;
+  is_paused?: boolean;
+  running_ticks?: number;
+  stopped_ticks?: number;
+  total_ticks?: number;
 }
 
 export interface SensorItem {
@@ -695,7 +699,8 @@ export interface EventRecordDTO {
 
 export interface ProductionLineFullState {
   session_id: string;
-  line_state: 'STOPPED' | 'RUNNING' | 'PAUSED' | 'EMERGENCY_STOP' | 'FAULT';
+  simulation_tick: number;
+  line_state: string;
   controller_mode: 'DEAM_LOGIC' | 'MICROPROCESSOR_8086';
   conveyor: ConveyorState;
   sensors: Record<string, SensorItem>;
@@ -711,6 +716,7 @@ export interface ProductionLineFullState {
     description: string | null;
     fault_tick: number | null;
   };
+  active_fault?: string | null;
 }
 
 

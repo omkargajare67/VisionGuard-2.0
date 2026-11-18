@@ -95,14 +95,14 @@ class LineController:
 
     def _init_8086_controller(self) -> None:
         try:
+            cpu_session_id = f"prod_ctrl_{self.session_id}"
+            cpu = microprocessor_service.get_or_create_session(cpu_session_id)
+            cpu.reset()
+            cpu.ppi.configure_for_visionguard()
             vg_prog = EXAMPLE_PROGRAMS.get("visionguard_controller", {})
             source = vg_prog.get("code", "")
             if source:
-                microprocessor_service.assemble_and_load(
-                    session_id=self.session_id,
-                    source_code=source,
-                    base_offset=0x0000,
-                )
+                cpu.load_assembly_program(source, base_offset=0x0000)
         except Exception:
             pass
 
@@ -116,7 +116,7 @@ class LineController:
     ) -> bool:
         """Validate and execute state machine transition."""
         allowed = self.VALID_TRANSITIONS.get(self.state, [])
-        is_valid = new_state in allowed or new_state == LineState.EMERGENCY_STOP
+        is_valid = new_state in allowed or new_state in [LineState.EMERGENCY_STOP, LineState.ERROR]
 
         if is_valid:
             prev = self.state
@@ -163,9 +163,13 @@ class LineController:
             }
 
         # 3. If controller mode is MICROPROCESSOR_8086, run assembly program via PPI
-        # Reset CPU state before run to ensure clean program execution
-        cpu = microprocessor_service.get_or_create_session(self.session_id)
+        # Reset CPU state before run to ensure clean program execution in dedicated session
+        cpu_session_id = f"prod_ctrl_{self.session_id}"
+        cpu = microprocessor_service.get_or_create_session(cpu_session_id)
         cpu.reset()
+
+        # Explicitly configure 8255 PPI for VisionGuard: Port A=IN, Port B=OUT (CW: 0x90)
+        cpu.ppi.configure_for_visionguard()
 
         # Reload VisionGuard controller assembly code
         vg_code = EXAMPLE_PROGRAMS.get("visionguard_controller", {}).get("code", "")
@@ -173,11 +177,17 @@ class LineController:
             cpu.load_assembly_program(vg_code, base_offset=0x0000)
 
         # Import feature flags into 8255 PPI Port A (80H)
-        port_a_val = (d << 0) | (s << 1) | (c << 2) | (l << 3) | (m << 4) | (g << 5)
-        cpu.ppi.set_port_a_external_input(port_a_val)
+        port_a_val = cpu.ppi.import_vision_flags(d=d, s=s, c=c, l=l, m=m, g=g)
 
         # Run CPU assembly execution (executes IN AL, 80H -> TEST -> CMP -> OUT 81H, AL -> HLT)
         run_res = cpu.run(max_steps=200)
+
+        # Confirm successful execution halt (do NOT silently fall back to DEAM result on failure)
+        if not run_res.get("halted", False) or run_res.get("error"):
+            err_msg = run_res.get("error") or "8086 CPU execution timed out without halting"
+            product.sorting_result = None
+            product.fault_reason = f"CPU_CONTROLLER_ERROR: {err_msg}"
+            raise RuntimeError(f"Microprocessor controller execution failed for product {product.product_id}: {err_msg}")
 
         # Read sorting outputs from Port B (81H)
         port_b_val = cpu.ppi.port_b
@@ -190,12 +200,18 @@ class LineController:
         # PB3 = Red LED (REJECT)
         # PB4 = Alarm Buzzer
         # PB5 = System Busy
-        if actuators.get("green_led", 0) == 1:
+        green_on = actuators.get("green_led", 0) == 1
+        red_on = actuators.get("red_led", 0) == 1
+        gate_divert = actuators.get("reject_gate", 0) == 1
+
+        if green_on and not red_on and not gate_divert:
             verdict = "PASS"
-        elif actuators.get("reject_gate", 0) == 1 or actuators.get("red_led", 0) == 1:
+        elif (red_on or gate_divert) and not green_on:
             verdict = "REJECT"
         else:
-            verdict = deam_decision_verdict
+            product.sorting_result = None
+            product.fault_reason = f"CPU_AMBIGUOUS_OUTPUT: Port B = 0x{port_b_val:02X}"
+            raise RuntimeError(f"Microprocessor controller produced ambiguous Port B output (0x{port_b_val:02X}) for product {product.product_id}")
 
         product.sorting_result = verdict
         product.fault_reason = (
