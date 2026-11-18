@@ -51,15 +51,15 @@ export const ProductionLineDashboard: React.FC = () => {
   useEffect(() => {
     if (!state) return;
     const isLineRunning =
-      Boolean(state.conveyor.running || state.conveyor.is_running) &&
-      !Boolean(state.conveyor.paused || state.conveyor.is_paused) &&
-      !state.conveyor.emergency_stopped &&
-      !state.fault_state.has_fault;
+      Boolean(state.conveyor?.running || state.conveyor?.is_running) &&
+      !Boolean(state.conveyor?.paused || state.conveyor?.is_paused) &&
+      !Boolean(state.conveyor?.emergency_stopped) &&
+      !Boolean(state.fault_state?.has_fault);
 
     if (!isLineRunning) return;
 
     // Tick speed: 250ms at 2.0x, scaled inversely with speed
-    const tickIntervalMs = Math.max(80, Math.round(500 / (state.conveyor.speed || 2.0)));
+    const tickIntervalMs = Math.max(80, Math.round(500 / (state.conveyor?.speed || 2.0)));
 
     const timer = setInterval(async () => {
       if (isTickingRef.current) return;
@@ -75,7 +75,17 @@ export const ProductionLineDashboard: React.FC = () => {
     }, tickIntervalMs);
 
     return () => clearInterval(timer);
-  }, [state?.line_state, state?.conveyor.is_paused, state?.conveyor.emergency_stopped, state?.conveyor.speed, state?.fault_state.has_fault, sessionId]);
+  }, [
+    state?.line_state,
+    state?.conveyor?.running,
+    state?.conveyor?.is_running,
+    state?.conveyor?.paused,
+    state?.conveyor?.is_paused,
+    state?.conveyor?.emergency_stopped,
+    state?.conveyor?.speed,
+    state?.fault_state?.has_fault,
+    sessionId,
+  ]);
 
   // Handlers
   const handleStart = async () => {

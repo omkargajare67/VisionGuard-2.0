@@ -31,9 +31,12 @@ class EventRecord:
 
     def to_dict(self) -> Dict[str, Any]:
         return {
+            "id": self.event_id,
             "event_id": self.event_id,
             "event_type": self.event_type,
+            "message": self.description,
             "description": self.description,
+            "tick": self.simulation_tick,
             "simulation_tick": self.simulation_tick,
             "timestamp": self.timestamp,
             "product_id": self.product_id,
