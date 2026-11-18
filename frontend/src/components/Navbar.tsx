@@ -1,11 +1,11 @@
 import React from 'react';
-import { Cpu, ShieldCheck, Eye, Activity, Binary, Terminal } from 'lucide-react';
+import { Cpu, ShieldCheck, Eye, Activity, Binary, Terminal, Factory } from 'lucide-react';
 
 interface NavbarProps {
   backendOnline: boolean | null;
   stage: number;
-  activeTab: '8086' | 'deam' | 'vision' | 'monitor';
-  onSelectTab: (tab: '8086' | 'deam' | 'vision' | 'monitor') => void;
+  activeTab: 'production' | '8086' | 'deam' | 'vision' | 'monitor';
+  onSelectTab: (tab: 'production' | '8086' | 'deam' | 'vision' | 'monitor') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -37,6 +37,18 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Center Navigation Tabs */}
         <div className="flex items-center p-1 rounded-xl bg-slate-950 border border-slate-800 text-xs overflow-x-auto">
+          <button
+            onClick={() => onSelectTab('production')}
+            className={`px-3 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap ${
+              activeTab === 'production'
+                ? 'bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-md shadow-cyan-600/30'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Factory className="w-3.5 h-3.5" />
+            <span>Production Line (Stage 5)</span>
+          </button>
+
           <button
             onClick={() => onSelectTab('8086')}
             className={`px-3 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap ${

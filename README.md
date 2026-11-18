@@ -96,7 +96,24 @@ VisionGuard 2.0 is an academic Digital Electronics and Microprocessors (DEAM) ca
 │       │   ├── timers.py           # 8253 PIT with Mode 0 (Terminal Count) & Mode 3
 │       │   ├── cpu8086.py          # Integrated CPU unifying BIU, EU, Bus, PPI, Timers
 │       │   └── example_programs.py # 5 preloaded assembly demos including VisionGuard
-│       └── simulation/             # [Stage 5] Conveyor kinematics & actuators
+│       ├── production_line/        # [Stage 5] Virtual production line & sorting
+│       │   ├── __init__.py
+│       │   ├── models.py           # State enums (LineState, ProductStatus, ControllerMode)
+│       │   ├── product.py          # Workpiece tracking, positions, and timestamps
+│       │   ├── conveyor.py         # Kinematic virtual conveyor with speed & E-STOP lock
+│       │   ├── sensors.py          # Photoelectric sensor network (IR-01, 02, 03, EXIT-01)
+│       │   ├── actuators.py        # Motor, servo gate (0°/45°), LEDs, buzzer, counters
+│       │   ├── inspection_station.py # Camera stop, OpenCV defect detector, DEAM flags
+│       │   ├── sorting_station.py  # Pneumatic diverter routing (PASS vs REJECT)
+│       │   ├── line_controller.py  # Dual-mode controller (DEAM Logic vs 8086 CPU + PPI)
+│       │   ├── production_metrics.py # Yield, scrap, Pareto defect breakdown, throughput
+│       │   ├── event_manager.py    # Audit trail and deterministic lifecycle history
+│       │   └── simulation_engine.py# Master simulation engine orchestrator
+│       └── services/
+│           ├── __init__.py
+│           ├── deam_service.py     # Stage 3 logic computation service
+│           ├── microprocessor_service.py # Stage 4 session-based 8086 CPU service
+│           └── production_line_service.py # Stage 5 production line session service
 └── frontend/
     ├── package.json
     ├── vite.config.ts              # Vite config with proxy to backend /api
@@ -106,14 +123,24 @@ VisionGuard 2.0 is an academic Digital Electronics and Microprocessors (DEAM) ca
         ├── App.tsx                 # Main dashboard container with Tab Navigation
         ├── index.css               # Tailwind CSS entry
         ├── types/
-        │   └── index.ts            # TypeScript interfaces (Vision + DEAM + 8086)
+        │   └── index.ts            # TypeScript interfaces (Vision + DEAM + 8086 + Production)
         ├── services/
-        │   └── api.ts              # Typed API communication service & microprocessorApi
+        │   └── api.ts              # Typed API communication service & productionLineApi
         └── components/
-            ├── Navbar.tsx          # Industrial header with Stage 4 indicator & 8086 Tab
+            ├── Navbar.tsx          # Industrial header with Stage 5 indicator & Production Tab
             ├── HealthMonitor.tsx   # Real-time health diagnostic card
             ├── ArchitectureOverview.tsx # 5-stage roadmap & DEAM mapping
             ├── DiagnosticLog.tsx   # Request telemetry & latency stream
+            ├── production-line/    # [Stage 5] Virtual Production Line UI
+            │   ├── ProductionLineDashboard.tsx # Master container and simulation loop
+            │   ├── ConveyorVisualization.tsx   # SVG animated conveyor, sensors, gate
+            │   ├── SimulationControls.tsx      # Start, Pause, Step, Speed, E-Stop, Batch
+            │   ├── ControllerModeSelector.tsx  # Mode A (DEAM) vs Mode B (8086 + PPI)
+            │   ├── InspectionStationPanel.tsx  # OpenCV viewfinder & 6-point flags
+            │   ├── SortingStationPanel.tsx     # Pneumatic gate, Port B actuators, counters
+            │   ├── ProductionMetricsPanel.tsx  # Yield, Scrap, Defect Pareto chart
+            │   ├── EventTimeline.tsx           # Audit log stream and filter
+            │   └── FaultInjectionPanel.tsx     # Hardware fault simulation & recovery
             ├── vision/             # [Stage 2] Vision Inspector UI
             │   ├── VisionInspector.tsx    # Master vision workbench (webcam stabilized)
             │   ├── SampleCatalog.tsx      # Synthetic sample cards & selector
@@ -205,7 +232,7 @@ npm run dev
 
 ---
 
-## 5. Automated Testing & QA Verification (Stage 4)
+## 5. Automated Testing & QA Verification (Stage 5)
 
 Run the backend test suite:
 ```bash
@@ -214,26 +241,20 @@ $env:PYTHONPATH="."
 ```
 
 ### 5.1 Verification Results
-- **62 of 62 automated tests passing** (100% pass rate in ~1.00s) across:
+- **79 of 79 automated tests passing** (100% pass rate in ~1.30s) across:
+  - `test_production_line.py`: **17 tests** verifying virtual conveyor kinematics, speed control, emergency stop hardware lock, photoelectric sensor trip logic (IR-01, IR-02, IR-03, EXIT-01), product queue collision avoidance, nominal PASS workflow in DEAM mode, nominal PASS workflow in 8086 CPU mode, defective REJECT workflows on all 5 defect benchmarks (VG-002 through VG-006), full 6-sample batch demo execution, Line FSM transitions, fault injection and fail-safe recovery, and REST API session lifecycle endpoints.
   - `test_microprocessor.py`: **21 tests** verifying 16-bit registers, 8-bit byte aliasing bitwise integrity, 20-bit physical memory addressing, little-endian word storage, ALU arithmetic and logic operations, status flag generation (CF, PF, AF, ZF, SF, OF), two-pass assembler with forward references, BIU 6-byte instruction prefetch queue and branch flushes, Intel 8255 PPI Mode 0 and BSR modes, 256-vector IVT interrupt handling with IRET restoration, 8253 PIT countdown and IRQ0 generation, and complete assembly execution of the VisionGuard quality inspection controller for nominal PASS (VG-001) and defective REJECT (VG-004) samples.
   - `test_deam.py`: **22 tests** covering logic gates, De Morgan's duality, Boolean expression evaluation, K-Map (2, 3, and 4 variables with don't cares), Adders, Multiplexers, Decoders, Priority Encoders, Parity generators & error checkers, Flip-Flops, Shift Registers, Synchronous Counters, Moore FSM lifecycle, and Vision-to-Logic decision bridge.
   - `test_vision.py`: **17 tests** verifying procedural synthetic generation, classical CV pipelines, and blind defect identification on all 6 benchmarks (VG-001 through VG-006).
   - `test_health.py`: **2 tests** checking system status and stage telemetry.
-- **Frontend Production Build**: `npm run build` succeeds cleanly in <500ms with zero TypeScript errors.
+- **Frontend Production Build**: `npm run build` succeeds cleanly in <600ms with zero TypeScript errors.
 
-### 5.2 Capstone Integration: VisionGuard 8086 Assembly Controller
-The simulation features an automated inspection program running on the virtual 8086 CPU:
-1. Port A (80H) reads OpenCV binary sensor flags: $D, S, C, L, M, G$.
-2. Nominal sample VG-001 writes $00111101\text{B} = 3\text{DH} = 61_{10}$ to Port A.
-3. The 8086 CPU executes:
-   - `IN AL, 80H`: Reads Port A into AL.
-   - `TEST AL, 20H` / `JZ NO_PRODUCT`: Verifies product presence at gate.
-   - `MOV BL, AL` / `AND BL, 3CH` / `CMP BL, 3CH`: Checks components, label, and marking.
-   - `TEST AL, 02H` / `JNZ DEFECT_REJECTED`: Checks for surface scratches.
-   - `OUT 81H, AL`: Emits actuator sorting signals on Port B (81H).
-4. Output signals on Port B:
-   - PASS: $05\text{H}$ (PB0 Conveyor Motor + PB2 Green LED).
-   - REJECT: $1A\text{H}$ (PB1 Reject Diverter + PB3 Red LED + PB4 Buzzer).
+### 5.2 Capstone Integration: Dual-Mode Industrial Sorting Controller
+The simulation features dual execution engines for automated product sorting:
+1. **Mode A (DEAM Digital Logic)**: Evaluates the combinational Boolean fault equation $F = S + \overline{C} + \overline{L} + \overline{M} + \overline{G}$.
+2. **Mode B (Intel 8086 CPU & 8255 PPI)**: Port A (80H) ingests the 6-point optical flags, the 8086 CPU executes the `visionguard_controller` assembly code, and drives Port B (81H) actuator signals:
+   - PASS: $05\text{H}$ (PB0 Conveyor Motor + PB2 Green LED + 0° Gate).
+   - REJECT: $1A\text{H}$ (PB1 Reject Diverter [45° Gate] + PB3 Red LED + PB4 Buzzer).
 
 ---
 
@@ -244,4 +265,4 @@ The simulation features an automated inspection program running on the virtual 8
 - **Stage 2.5 (Completed)**: Stabilization & Quality Assurance (Webcam lifecycle fixes, ref-based track cleanup, blind test verification, API validation).
 - **Stage 3 (Completed)**: DEAM Digital Electronics Simulation Engine (Interactive Digital Logic Lab, Boolean Algebra, Gray-Code K-Map Minimizer, Adders, Multiplexers, Decoders, Priority Encoders, Parity Gen/Check, Flip-Flops, Shift Registers, Synchronous Counters, Moore FSM, and Vision-to-Logic Hardware Decision Bridge).
 - **Stage 4 (Completed)**: Educational Intel 8086 Microprocessor & 8255 PPI Simulator (16-bit register architecture, 8-bit aliasing, 1 MB segmented physical memory, ALU condition flags, two-pass assembler, BIU 6-byte prefetch queue, 8255 PPI Mode 0/1/BSR, 256-vector IVT, 8253 PIT timer, and full React Microprocessor Laboratory).
-- **Stage 5 (Upcoming)**: Full Virtual Production Line & System Integration.
+- **Stage 5 (Completed)**: Virtual Production Line, Conveyor Simulation & End-to-End System Integration (Deterministic conveyor transport, photoelectric sensor network, automated OpenCV inspection station, pneumatic diverter gate, dual-mode DEAM/8086 controller, live analytics, Pareto defect chart, and audit trail).

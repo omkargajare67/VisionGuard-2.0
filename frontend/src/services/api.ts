@@ -20,6 +20,10 @@ import type {
   FsmStateResult,
   FsmTransitionResult,
   InspectionDecisionResult,
+  ProductionLineFullState,
+  ProductionMetricsDTO,
+  ProductDTO,
+  EventRecordDTO,
 } from '../types';
 
 const API_BASE = '/api';
@@ -742,6 +746,200 @@ export const microprocessorApi = {
       cpu_state: res.full_state,
       timer: res.timer,
     };
+  },
+};
+
+// -----------------------------------------------------------------------------
+// STAGE 5: VIRTUAL PRODUCTION LINE API
+// -----------------------------------------------------------------------------
+
+export const productionLineApi = {
+  getStatus: async (): Promise<any> => {
+    const res = await fetch(`${API_BASE}/production-line/status`);
+    if (!res.ok) throw new Error('Failed to fetch production line status');
+    return res.json();
+  },
+
+  getState: async (sessionId: string = 'default'): Promise<ProductionLineFullState> => {
+    const res = await fetch(`${API_BASE}/production-line/state?session_id=${sessionId}`);
+    if (!res.ok) throw new Error('Failed to fetch production line state');
+    return res.json();
+  },
+
+  resetSession: async (sessionId: string = 'default'): Promise<ProductionLineFullState> => {
+    const res = await fetch(`${API_BASE}/production-line/session/reset`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId }),
+    });
+    if (!res.ok) throw new Error('Failed to reset production line session');
+    return res.json();
+  },
+
+  start: async (sessionId: string = 'default'): Promise<any> => {
+    const res = await fetch(`${API_BASE}/production-line/control/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId }),
+    });
+    if (!res.ok) throw new Error('Failed to start conveyor');
+    return res.json();
+  },
+
+  stop: async (sessionId: string = 'default'): Promise<any> => {
+    const res = await fetch(`${API_BASE}/production-line/control/stop`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId }),
+    });
+    if (!res.ok) throw new Error('Failed to stop conveyor');
+    return res.json();
+  },
+
+  pause: async (sessionId: string = 'default'): Promise<any> => {
+    const res = await fetch(`${API_BASE}/production-line/control/pause`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId }),
+    });
+    if (!res.ok) throw new Error('Failed to pause conveyor');
+    return res.json();
+  },
+
+  resume: async (sessionId: string = 'default'): Promise<any> => {
+    const res = await fetch(`${API_BASE}/production-line/control/resume`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId }),
+    });
+    if (!res.ok) throw new Error('Failed to resume conveyor');
+    return res.json();
+  },
+
+  emergencyStop: async (sessionId: string = 'default'): Promise<any> => {
+    const res = await fetch(`${API_BASE}/production-line/control/emergency-stop`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId }),
+    });
+    if (!res.ok) throw new Error('Failed to trigger emergency stop');
+    return res.json();
+  },
+
+  clearEmergencyStop: async (sessionId: string = 'default'): Promise<any> => {
+    const res = await fetch(`${API_BASE}/production-line/control/emergency-stop/clear`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId }),
+    });
+    if (!res.ok) throw new Error('Failed to clear emergency stop');
+    return res.json();
+  },
+
+  setSpeed: async (sessionId: string = 'default', speed: number = 2.0): Promise<any> => {
+    const res = await fetch(`${API_BASE}/production-line/control/speed`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId, speed }),
+    });
+    if (!res.ok) throw new Error('Failed to set conveyor speed');
+    return res.json();
+  },
+
+  setControllerMode: async (
+    sessionId: string = 'default',
+    mode: 'DEAM_LOGIC' | 'MICROPROCESSOR_8086' = 'DEAM_LOGIC'
+  ): Promise<any> => {
+    const res = await fetch(`${API_BASE}/production-line/control/mode`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId, controller_mode: mode }),
+    });
+    if (!res.ok) throw new Error('Failed to set controller mode');
+    return res.json();
+  },
+
+  tick: async (sessionId: string = 'default', steps: number = 1): Promise<ProductionLineFullState> => {
+    const res = await fetch(`${API_BASE}/production-line/simulation/tick`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId, steps }),
+    });
+    if (!res.ok) throw new Error('Failed to advance simulation tick');
+    return res.json();
+  },
+
+  addProduct: async (sessionId: string = 'default', sampleId: string = 'VG-001'): Promise<ProductDTO> => {
+    const res = await fetch(`${API_BASE}/production-line/products/add`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId, sample_id: sampleId }),
+    });
+    if (!res.ok) throw new Error('Failed to add product');
+    const data = await res.json();
+    return data.product;
+  },
+
+  removeQueuedProduct: async (sessionId: string = 'default', productId: string): Promise<any> => {
+    const res = await fetch(`${API_BASE}/production-line/products/queue/${productId}?session_id=${sessionId}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) throw new Error('Failed to remove queued product');
+    return res.json();
+  },
+
+  addBatchDemo: async (sessionId: string = 'default'): Promise<ProductDTO[]> => {
+    const res = await fetch(`${API_BASE}/production-line/products/batch-demo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId }),
+    });
+    if (!res.ok) throw new Error('Failed to add batch demo');
+    const data = await res.json();
+    return data.queued_products;
+  },
+
+  getMetrics: async (sessionId: string = 'default'): Promise<ProductionMetricsDTO> => {
+    const res = await fetch(`${API_BASE}/production-line/metrics?session_id=${sessionId}`);
+    if (!res.ok) throw new Error('Failed to fetch metrics');
+    return res.json();
+  },
+
+  resetMetrics: async (sessionId: string = 'default'): Promise<any> => {
+    const res = await fetch(`${API_BASE}/production-line/metrics/reset`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId }),
+    });
+    if (!res.ok) throw new Error('Failed to reset metrics');
+    return res.json();
+  },
+
+  getEvents: async (sessionId: string = 'default', limit: number = 50): Promise<EventRecordDTO[]> => {
+    const res = await fetch(`${API_BASE}/production-line/events?session_id=${sessionId}&limit=${limit}`);
+    if (!res.ok) throw new Error('Failed to fetch events');
+    const data = await res.json();
+    return data.events;
+  },
+
+  injectFault: async (sessionId: string = 'default', faultType: string = 'CONVEYOR_JAM'): Promise<any> => {
+    const res = await fetch(`${API_BASE}/production-line/fault/inject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId, fault_type: faultType }),
+    });
+    if (!res.ok) throw new Error('Failed to inject fault');
+    return res.json();
+  },
+
+  clearFault: async (sessionId: string = 'default'): Promise<any> => {
+    const res = await fetch(`${API_BASE}/production-line/fault/clear`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId }),
+    });
+    if (!res.ok) throw new Error('Failed to clear fault');
+    return res.json();
   },
 };
 

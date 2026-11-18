@@ -278,3 +278,30 @@ class TimerConfigureRequest(BaseModel):
 class TimerTickRequest(BaseModel):
     ticks: int = Field(1, ge=1, le=1000, description="Clock ticks to advance")
 
+
+# -----------------------------------------------------------------------------
+# STAGE 5: VIRTUAL PRODUCTION LINE SCHEMAS
+# -----------------------------------------------------------------------------
+
+class ProductionLineProductCreateRequest(BaseModel):
+    name: str = Field("Electronic Control Module", description="Product title / identifier")
+    sample_id: Optional[str] = Field("VG-001", description="Synthetic sample ID or None")
+    custom_image_base64: Optional[str] = Field(None, description="Optional base64 JPEG/PNG for live upload")
+
+
+class ProductionLineSpeedRequest(BaseModel):
+    speed: float = Field(5.0, ge=1.0, le=25.0, description="Conveyor movement speed per tick")
+
+
+class ProductionLineTickRequest(BaseModel):
+    steps: int = Field(1, ge=1, le=50, description="Number of simulation steps to advance")
+
+
+class ProductionLineControllerModeRequest(BaseModel):
+    mode: str = Field("DEAM_LOGIC", description="Controller mode: 'DEAM_LOGIC' or 'MICROPROCESSOR_8086'")
+
+
+class ProductionLineFaultRequest(BaseModel):
+    fault_type: str = Field("CONVEYOR_JAM", description="Fault identifier (e.g. CONVEYOR_JAM, IR_SENSOR_FAULT, ACTUATOR_JAM)")
+
+

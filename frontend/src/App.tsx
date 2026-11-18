@@ -6,11 +6,12 @@ import { DiagnosticLog } from './components/DiagnosticLog';
 import { VisionInspector } from './components/vision/VisionInspector';
 import { DeamLaboratory } from './components/deam/DeamLaboratory';
 import { MicroprocessorLab } from './components/microprocessor/MicroprocessorLab';
+import { ProductionLineDashboard } from './components/production-line/ProductionLineDashboard';
 import { fetchHealth } from './services/api';
 import type { HealthResponse, HealthCheckRecord, InspectionResult } from './types';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'8086' | 'deam' | 'vision' | 'monitor'>('8086');
+  const [activeTab, setActiveTab] = useState<'production' | '8086' | 'deam' | 'vision' | 'monitor'>('production');
   const [latestInspection, setLatestInspection] = useState<InspectionResult | null>(null);
   const [healthData, setHealthData] = useState<HealthResponse | null>(null);
   const [latencyMs, setLatencyMs] = useState<number | null>(null);
@@ -89,13 +90,15 @@ export const App: React.FC = () => {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-cyan-500/30 selection:text-cyan-200">
       <Navbar
         backendOnline={error ? false : isBackendOnline}
-        stage={4}
+        stage={5}
         activeTab={activeTab}
         onSelectTab={setActiveTab}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
-        {activeTab === '8086' ? (
+        {activeTab === 'production' ? (
+          <ProductionLineDashboard />
+        ) : activeTab === '8086' ? (
           <MicroprocessorLab latestInspectionResult={latestInspection} />
         ) : activeTab === 'deam' ? (
           <DeamLaboratory latestInspectionResult={latestInspection} />
@@ -141,7 +144,7 @@ export const App: React.FC = () => {
       </main>
 
       <footer className="border-t border-slate-900 bg-slate-950/80 px-6 py-4 text-center text-xs text-slate-500">
-        VisionGuard 2.0 &bull; Academic DEAM Capstone System &bull; Stage 4 Intel 8086 Microprocessor & 8255 PPI Simulation Engine
+        VisionGuard 2.0 &bull; Academic DEAM Capstone System &bull; Stage 5 Virtual Production Line &amp; Automated Sorting
       </footer>
     </div>
   );

@@ -287,6 +287,21 @@ class PPI8255:
             "decision": "PASS" if ((val >> 2) & 1) else ("REJECT" if ((val >> 3) & 1) else "IDLE"),
         }
 
+    def get_actuator_status(self) -> Dict[str, Any]:
+        return self.get_port_b_actuator_signals()
+
+    @property
+    def port_a(self) -> int:
+        return self.read_port("A")
+
+    @property
+    def port_b(self) -> int:
+        return self.read_port("B")
+
+    @property
+    def port_c(self) -> int:
+        return self.read_port("C")
+
     def to_dict(self) -> Dict[str, Any]:
         curr_a = self.read_port("A")
         curr_b = self.read_port("B")
