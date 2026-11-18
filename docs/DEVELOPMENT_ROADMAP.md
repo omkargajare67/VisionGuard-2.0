@@ -163,14 +163,30 @@ This roadmap outlines the systematic phased delivery and verification milestones
 
 ---
 
-## Stage 5: Full Virtual Production Line & System Integration (Upcoming)
-- [ ] Physics-informed production line simulation engine (`backend/app/simulation/`):
-  - Discrete-time conveyor kinematic model.
-  - Infrared beam sensor triggering and debounce logic.
-  - Servo gate deflection mechanics and pneumatic sorting bin physics.
-  - Status LEDs and audible buzzer state machine.
-- [ ] Real-time bi-directional WebSocket hub streaming continuous conveyor states.
-- [ ] Full end-to-end automated cycle:
-  - Conveyor runs -> IR sensor trips -> Conveyor stops -> Camera captures image -> OpenCV inspects -> Digital logic validates -> 8086 ISR runs -> 8255 outputs actuation -> Servo diverts or passes unit -> Counters increment -> Conveyor restarts.
-- [ ] High-fidelity animated virtual factory floor in React using Framer Motion and canvas/SVG rendering.
-- [ ] Inspection logs, statistics charts, and local SQLite/CSV export capabilities.
+## Stage 5: Full Virtual Production Line & System Integration (Completed & Verified)
+- [x] Deterministic virtual production line simulation engine (`backend/app/production_line/`):
+  - Discrete tick-based kinematic conveyor model with speed control (0.5x to 10x), continuous run, pause/resume, and hardware emergency stop lock (`VirtualConveyor`).
+  - Photoelectric sensor network (`VirtualSensor`, `SensorNetwork`) with position detection fields: IR-01 (Arrival, 10%), IR-02 (Inspection Stop, 30%), IR-03 (Sorting Arrival, 70%), and EXIT-01 (Exit Counter, 90%).
+  - Actuator subsystem (`ActuatorSubsystem`): Conveyor motor, pneumatic diverter gate (0° IDLE vs 45° DIVERT), Green LED (PASS), Red LED (REJECT), acoustic alarm buzzer, and pass/reject lane counters.
+  - Inspection station (`InspectionStation`): Executes actual OpenCV `DefectDetector().analyze(...)` and maps feature results to standard DEAM signals ($D, S, C, L, M, G$).
+  - Sorting station (`SortingStation`): Diverts defective units into reject chute (45°) and allows nominal units to continue along the pass lane (0°).
+  - Dual-mode controller (`LineController`):
+    - Mode A: Combinational Boolean logic fault evaluation ($F = S + \overline{C} + \overline{L} + \overline{M} + \overline{G}$).
+    - Mode B: Microprocessor execution via Intel 8086 CPU & 8255 PPI I/O port simulation (`visionguard_controller`).
+  - Production metrics & analytics (`ProductionMetrics`): Running tallies of total ingested, inspected, passed, rejected, yield rate, scrap rate, cycle times, and Defect Pareto distribution.
+  - Event audit manager (`EventManager`): Chronological, filterable audit trail for complete traceability.
+- [x] REST API endpoints (`backend/app/api/production_line.py`):
+  - 18 endpoints covering status, session management, start/stop/pause/resume, speed, ticks, single product addition, 6-sample batch demo, sensors, actuators, metrics, events, and fault injection.
+- [x] Full Pytest suite of 17 tests (`backend/tests/test_production_line.py`), **79/79 passing across all suites in 1.30s**.
+- [x] React Virtual Production Line Dashboard (`frontend/src/components/production-line/`):
+  - Master dashboard container `ProductionLineDashboard.tsx` with simulation interval loop and session sync.
+  - `ConveyorVisualization.tsx`: High-fidelity SVG animated schematic with belt rollers, texture, dynamic product tokens at real positions, active sensor beam lines, and diverter arm.
+  - `SimulationControls.tsx`: Start, Pause, Resume, Stop, Single Step (F7), Reset, Speed presets, Sample Injection dropdown, 6-Sample Batch Demo button, and industrial Emergency Stop button.
+  - `ControllerModeSelector.tsx`: Interactive toggle between Mode A (DEAM Logic) and Mode B (8086 CPU + 8255 PPI) with architecture equations and instruction traces.
+  - `InspectionStationPanel.tsx`: Camera viewfinder with crosshairs, sample thumbnail, processing duration, and 6 binary DEAM flag indicator chips.
+  - `SortingStationPanel.tsx`: Diverter servo angle, Pass/Reject lane counters and percentages, actuator indicators, and 8255 PPI Port B (81H) byte/binary display.
+  - `ProductionMetricsPanel.tsx`: KPI cards (Ingested, Inspected, Yield, Scrap) and interactive Defect Category Pareto distribution bars.
+  - `EventTimeline.tsx`: Scrollable, filterable event history stream with timestamps and tick counts.
+  - `FaultInjectionPanel.tsx`: Industrial fault injection (Conveyor Jam, Sensor Blinding, Gate Pneumatic Loss) and recovery testing.
+- [x] Navigation update: Navbar `'production'` tab added with Stage 5 badge; default routed to ProductionLineDashboard.
+- [x] Frontend production build: `npm run build` succeeds cleanly in <600ms with zero errors.

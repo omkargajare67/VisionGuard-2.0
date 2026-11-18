@@ -580,4 +580,138 @@ export interface ExampleProgram {
   source?: string;
 }
 
+// -----------------------------------------------------------------------------
+// STAGE 5: VIRTUAL PRODUCTION LINE & SYSTEM INTEGRATION TYPES
+// -----------------------------------------------------------------------------
+
+export interface ProductDTO {
+  id: string;
+  sample_id: string;
+  status:
+    | 'QUEUED'
+    | 'ON_CONVEYOR'
+    | 'AT_INSPECTION'
+    | 'INSPECTED'
+    | 'AT_SORTING'
+    | 'SORTED_PASS'
+    | 'SORTED_REJECT'
+    | 'EXITED';
+  position: number;
+  speed: number;
+  queue_time: string;
+  entry_tick: number | null;
+  inspection_tick: number | null;
+  sorting_tick: number | null;
+  exit_tick: number | null;
+  inspection_flags: Record<string, number>;
+  inspection_data: Record<string, any> | null;
+  sorting_result: 'PASS' | 'REJECT' | 'UNREADABLE' | null;
+  fault_reason: string | null;
+  is_completed: boolean;
+}
+
+export interface ConveyorState {
+  is_running: boolean;
+  is_paused: boolean;
+  speed: number;
+  direction: string;
+  total_distance: number;
+  total_ticks: number;
+  emergency_stopped: boolean;
+}
+
+export interface SensorItem {
+  id: string;
+  name: string;
+  position: number;
+  detection_window: number;
+  active: boolean;
+  detected_count: number;
+  current_product_id: string | null;
+}
+
+export interface ActuatorState {
+  conveyor_motor: boolean;
+  diverter_gate: {
+    angle_deg: number;
+    state: string;
+    target_angle: number;
+  };
+  green_led: boolean;
+  red_led: boolean;
+  buzzer: boolean;
+  pass_lane_count: number;
+  reject_lane_count: number;
+  ppi_port_b_byte: number;
+}
+
+export interface StationPositionsDTO {
+  ENTRY: number;
+  SENSOR_IR1: number;
+  INSPECTION: number;
+  SENSOR_IR2: number;
+  SENSOR_IR3: number;
+  SORTING_GATE: number;
+  EXIT_SENSOR: number;
+  EXIT: number;
+}
+
+export interface ProductionMetricsDTO {
+  total_entered: number;
+  total_inspected: number;
+  total_passed: number;
+  total_rejected: number;
+  total_sorted: number;
+  pass_percentage: number;
+  reject_percentage: number;
+  active_products: number;
+  queued_products: number;
+  completed_cycles: number;
+  average_inspection_time_ms: number;
+  average_cycle_time_ticks: number;
+  conveyor_running_ticks: number;
+  conveyor_stopped_ticks: number;
+  fault_count: number;
+  emergency_stop_count: number;
+  defect_distribution: Record<string, number>;
+  throughput_history: Array<{
+    tick: number;
+    passed: number;
+    rejected: number;
+    total: number;
+  }>;
+}
+
+export interface EventRecordDTO {
+  id: string;
+  timestamp: string;
+  tick: number;
+  event_type: string;
+  product_id: string | null;
+  station: string | null;
+  message: string;
+  data: Record<string, any>;
+}
+
+export interface ProductionLineFullState {
+  session_id: string;
+  line_state: 'STOPPED' | 'RUNNING' | 'PAUSED' | 'EMERGENCY_STOP' | 'FAULT';
+  controller_mode: 'DEAM_LOGIC' | 'MICROPROCESSOR_8086';
+  conveyor: ConveyorState;
+  sensors: Record<string, SensorItem>;
+  actuators: ActuatorState;
+  station_positions: StationPositionsDTO;
+  queue: ProductDTO[];
+  active_products: ProductDTO[];
+  completed_products: ProductDTO[];
+  metrics: ProductionMetricsDTO;
+  recent_events: EventRecordDTO[];
+  fault_state: {
+    has_fault: boolean;
+    description: string | null;
+    fault_tick: number | null;
+  };
+}
+
+
 
