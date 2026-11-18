@@ -294,11 +294,12 @@ class ProductionLineSpeedRequest(BaseModel):
 
 
 class ProductionLineTickRequest(BaseModel):
-    steps: int = Field(1, ge=1, le=50, description="Number of simulation steps to advance")
+    steps: int = Field(1, ge=1, le=500, description="Number of simulation steps to advance")
 
 
 class ProductionLineControllerModeRequest(BaseModel):
-    mode: str = Field("DEAM_LOGIC", description="Controller mode: 'DEAM_LOGIC' or 'MICROPROCESSOR_8086'")
+    mode: Optional[str] = Field(None, description="Controller mode: 'DEAM_LOGIC' or 'MICROPROCESSOR_8086'")
+    controller_mode: Optional[str] = Field(None, description="Alias for mode")
 
 
 class ProductionLineFaultRequest(BaseModel):

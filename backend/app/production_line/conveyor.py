@@ -81,16 +81,27 @@ class VirtualConveyor:
             self.stopped_ticks += 1
             return 0.0
 
+    @property
+    def is_running(self) -> bool:
+        return self.running
+
+    @property
+    def is_paused(self) -> bool:
+        return self.paused
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "speed": self.speed,
             "length": self.length,
             "capacity": self.capacity,
             "running": self.running,
+            "is_running": self.running,
             "paused": self.paused,
+            "is_paused": self.paused,
             "emergency_stopped": self.emergency_stopped,
             "direction": self.direction,
             "total_distance": round(self.total_distance, 2),
             "running_ticks": self.running_ticks,
             "stopped_ticks": self.stopped_ticks,
+            "total_ticks": self.running_ticks + self.stopped_ticks,
         }

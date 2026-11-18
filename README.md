@@ -41,7 +41,9 @@ VisionGuard 2.0 is an academic Digital Electronics and Microprocessors (DEAM) ca
 │   ├── PROJECT_REQUIREMENTS.md     # Full functional & non-functional requirements
 │   ├── SYSTEM_ARCHITECTURE.md      # Detailed system diagrams & module schemas
 │   ├── DEAM_MAPPING.md             # Direct mapping of DEAM curriculum Units 1-6
-│   └── DEVELOPMENT_ROADMAP.md      # Five-stage development milestones & QA log
+│   ├── DEVELOPMENT_ROADMAP.md      # Five-stage development milestones & QA log
+│   ├── PRODUCTION_LINE_SIMULATION.md # Virtual conveyor & sorting specifications
+│   └── FINAL_QA_REPORT.md          # Comprehensive final stabilisation & QA report
 ├── backend/
 │   ├── requirements.txt            # Backend-specific package constraints
 │   ├── tests/
@@ -49,7 +51,9 @@ VisionGuard 2.0 is an academic Digital Electronics and Microprocessors (DEAM) ca
 │   │   ├── test_health.py          # Pytest suite for baseline API endpoints (2 tests)
 │   │   ├── test_vision.py          # Automated tests for vision & CV pipeline (17 tests)
 │   │   ├── test_deam.py            # Automated tests for digital electronics (22 tests)
-│   │   └── test_microprocessor.py  # Automated tests for 8086 CPU & 8255 PPI (21 tests)
+│   │   ├── test_microprocessor.py  # Automated tests for 8086 CPU & 8255 PPI (21 tests)
+│   │   ├── test_production_line.py # Automated tests for production line & conveyor (17 tests)
+│   │   └── test_final_integration.py # Comprehensive end-to-end integration suite (16 tests)
 │   └── app/
 │       ├── __init__.py
 │       ├── main.py                 # FastAPI application root & router registration
@@ -232,22 +236,23 @@ npm run dev
 
 ---
 
-## 5. Automated Testing & QA Verification (Stage 5)
+## 5. Automated Testing & QA Verification (Final Stabilisation)
 
-Run the backend test suite:
+Run the complete backend test suite:
 ```bash
 $env:PYTHONPATH="."
 .\backend\.venv\Scripts\python -m pytest backend/tests -v
 ```
 
 ### 5.1 Verification Results
-- **79 of 79 automated tests passing** (100% pass rate in ~1.30s) across:
+- **95 of 95 automated tests passing** (100% pass rate in ~1.61s) across:
+  - `test_final_integration.py`: **16 tests** verifying cross-module end-to-end integration: state contract schema (`running`/`is_running`, `paused`/`is_paused`), true photoelectric sensor edge detection without re-triggering, strict elimination of silent inspection fallbacks (no silent `VG-001` substitution), independent multi-session isolation across clients, real Intel 8086 CPU and 8255 PPI Port B actuator signal generation ($05\text{H}$ for PASS, $1A\text{H}$ for REJECT), sorting routing guards, emergency stop hardware interlocks, fault injection and recovery lifecycles, physical workpiece collision prevention, full 6-sample batch runs, and API route normalization.
   - `test_production_line.py`: **17 tests** verifying virtual conveyor kinematics, speed control, emergency stop hardware lock, photoelectric sensor trip logic (IR-01, IR-02, IR-03, EXIT-01), product queue collision avoidance, nominal PASS workflow in DEAM mode, nominal PASS workflow in 8086 CPU mode, defective REJECT workflows on all 5 defect benchmarks (VG-002 through VG-006), full 6-sample batch demo execution, Line FSM transitions, fault injection and fail-safe recovery, and REST API session lifecycle endpoints.
   - `test_microprocessor.py`: **21 tests** verifying 16-bit registers, 8-bit byte aliasing bitwise integrity, 20-bit physical memory addressing, little-endian word storage, ALU arithmetic and logic operations, status flag generation (CF, PF, AF, ZF, SF, OF), two-pass assembler with forward references, BIU 6-byte instruction prefetch queue and branch flushes, Intel 8255 PPI Mode 0 and BSR modes, 256-vector IVT interrupt handling with IRET restoration, 8253 PIT countdown and IRQ0 generation, and complete assembly execution of the VisionGuard quality inspection controller for nominal PASS (VG-001) and defective REJECT (VG-004) samples.
   - `test_deam.py`: **22 tests** covering logic gates, De Morgan's duality, Boolean expression evaluation, K-Map (2, 3, and 4 variables with don't cares), Adders, Multiplexers, Decoders, Priority Encoders, Parity generators & error checkers, Flip-Flops, Shift Registers, Synchronous Counters, Moore FSM lifecycle, and Vision-to-Logic decision bridge.
   - `test_vision.py`: **17 tests** verifying procedural synthetic generation, classical CV pipelines, and blind defect identification on all 6 benchmarks (VG-001 through VG-006).
   - `test_health.py`: **2 tests** checking system status and stage telemetry.
-- **Frontend Production Build**: `npm run build` succeeds cleanly in <600ms with zero TypeScript errors.
+- **Frontend Production Build**: `npm run build` succeeds cleanly in <600ms with zero TypeScript errors or warnings.
 
 ### 5.2 Capstone Integration: Dual-Mode Industrial Sorting Controller
 The simulation features dual execution engines for automated product sorting:
@@ -258,7 +263,7 @@ The simulation features dual execution engines for automated product sorting:
 
 ---
 
-## 6. Five-Stage Development Roadmap
+## 6. Five-Stage Development Roadmap & Final Stabilisation
 
 - **Stage 1 (Completed)**: Foundation & Architecture Setup (FastAPI backend, Vite frontend, health check, baseline verification).
 - **Stage 2 (Completed)**: OpenCV Vision Inspection Engine & Synthetic Sample Generator (6-sample benchmark generator, classical CV pipeline, multipart upload, webcam acquisition, annotated overlay, DEAM binary flags).
@@ -266,3 +271,4 @@ The simulation features dual execution engines for automated product sorting:
 - **Stage 3 (Completed)**: DEAM Digital Electronics Simulation Engine (Interactive Digital Logic Lab, Boolean Algebra, Gray-Code K-Map Minimizer, Adders, Multiplexers, Decoders, Priority Encoders, Parity Gen/Check, Flip-Flops, Shift Registers, Synchronous Counters, Moore FSM, and Vision-to-Logic Hardware Decision Bridge).
 - **Stage 4 (Completed)**: Educational Intel 8086 Microprocessor & 8255 PPI Simulator (16-bit register architecture, 8-bit aliasing, 1 MB segmented physical memory, ALU condition flags, two-pass assembler, BIU 6-byte prefetch queue, 8255 PPI Mode 0/1/BSR, 256-vector IVT, 8253 PIT timer, and full React Microprocessor Laboratory).
 - **Stage 5 (Completed)**: Virtual Production Line, Conveyor Simulation & End-to-End System Integration (Deterministic conveyor transport, photoelectric sensor network, automated OpenCV inspection station, pneumatic diverter gate, dual-mode DEAM/8086 controller, live analytics, Pareto defect chart, and audit trail).
+- **Final Stabilisation & QA (Completed)**: Cross-module state contract synchronization, decoupled simulation loops, sensor edge detection without chatter, zero-fallback error escalation, multi-session isolation, hardware interlocks, and 16-test final integration suite (95/95 tests passing). Detailed report in [docs/FINAL_QA_REPORT.md](file:///d:/DEAM%20CP/docs/FINAL_QA_REPORT.md).

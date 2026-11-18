@@ -21,6 +21,158 @@ def get_production_line_status() -> Dict[str, Any]:
 
 
 # -----------------------------------------------------------------------------
+# Flat Endpoint Aliases (Supporting both path-based and body/query-based REST clients)
+# -----------------------------------------------------------------------------
+
+@router.get("/state")
+def get_state_alias(session_id: str = Query("default")) -> Dict[str, Any]:
+    engine = production_line_service.get_or_create_session(session_id)
+    return engine.get_state()
+
+
+@router.post("/session/reset")
+def reset_session_alias(payload: Dict[str, Any]) -> Dict[str, Any]:
+    session_id = payload.get("session_id", "default")
+    return production_line_service.reset_session(session_id)
+
+
+@router.post("/control/start")
+def start_line_alias(payload: Dict[str, Any]) -> Dict[str, Any]:
+    session_id = payload.get("session_id", "default")
+    return production_line_service.start_line(session_id)
+
+
+@router.post("/control/stop")
+def stop_line_alias(payload: Dict[str, Any]) -> Dict[str, Any]:
+    session_id = payload.get("session_id", "default")
+    return production_line_service.stop_line(session_id)
+
+
+@router.post("/control/pause")
+def pause_line_alias(payload: Dict[str, Any]) -> Dict[str, Any]:
+    session_id = payload.get("session_id", "default")
+    return production_line_service.pause_line(session_id)
+
+
+@router.post("/control/resume")
+def resume_line_alias(payload: Dict[str, Any]) -> Dict[str, Any]:
+    session_id = payload.get("session_id", "default")
+    return production_line_service.resume_line(session_id)
+
+
+@router.post("/control/emergency-stop")
+def emergency_stop_alias(payload: Dict[str, Any]) -> Dict[str, Any]:
+    session_id = payload.get("session_id", "default")
+    return production_line_service.emergency_stop(session_id)
+
+
+@router.post("/control/emergency-stop/clear")
+def clear_emergency_alias(payload: Dict[str, Any]) -> Dict[str, Any]:
+    session_id = payload.get("session_id", "default")
+    return production_line_service.clear_emergency(session_id)
+
+
+@router.post("/control/speed")
+def set_speed_alias(payload: Dict[str, Any]) -> Dict[str, Any]:
+    session_id = payload.get("session_id", "default")
+    speed = float(payload.get("speed", 5.0))
+    return production_line_service.set_speed(session_id, speed)
+
+
+@router.post("/control/mode")
+def set_mode_alias(payload: Dict[str, Any]) -> Dict[str, Any]:
+    session_id = payload.get("session_id", "default")
+    mode = payload.get("controller_mode") or payload.get("mode") or "DEAM_LOGIC"
+    return production_line_service.set_controller_mode(session_id, mode)
+
+
+@router.post("/simulation/tick")
+def tick_alias(payload: Dict[str, Any]) -> Dict[str, Any]:
+    session_id = payload.get("session_id", "default")
+    steps = int(payload.get("steps", 1))
+    return production_line_service.tick_simulation(session_id, steps)
+
+
+@router.post("/products/add")
+def add_product_alias(payload: Dict[str, Any]) -> Dict[str, Any]:
+    session_id = payload.get("session_id", "default")
+    name = payload.get("name", "Electronic Control Module")
+    sample_id = payload.get("sample_id", "VG-001")
+    custom_image = payload.get("custom_image_base64")
+    return production_line_service.add_product(session_id, name, sample_id, custom_image)
+
+
+@router.post("/products/batch-demo")
+def add_batch_demo_alias(payload: Dict[str, Any]) -> Dict[str, Any]:
+    session_id = payload.get("session_id", "default")
+    return production_line_service.add_batch_demo(session_id)
+
+
+@router.delete("/products/queue/{product_id}")
+def remove_product_alias(product_id: str, session_id: str = Query("default")) -> Dict[str, Any]:
+    return production_line_service.remove_product(session_id, product_id)
+
+
+@router.get("/metrics")
+def get_metrics_alias(session_id: str = Query("default")) -> Dict[str, Any]:
+    engine = production_line_service.get_or_create_session(session_id)
+    return engine.metrics.to_dict(
+        active_count=len(engine.active_products),
+        queued_count=len(engine.queue),
+    )
+
+
+@router.post("/metrics/reset")
+def reset_metrics_alias(payload: Dict[str, Any]) -> Dict[str, Any]:
+    session_id = payload.get("session_id", "default")
+    engine = production_line_service.get_or_create_session(session_id)
+    engine.metrics.reset()
+    return engine.metrics.to_dict(
+        active_count=len(engine.active_products),
+        queued_count=len(engine.queue),
+    )
+
+
+@router.get("/events")
+def get_events_alias(
+    session_id: str = Query("default"),
+    limit: int = Query(50, ge=1, le=200),
+    product_id: Optional[str] = None,
+    event_type: Optional[str] = None,
+) -> Dict[str, Any]:
+    engine = production_line_service.get_or_create_session(session_id)
+    events = engine.event_manager.get_events(
+        limit=limit, product_id=product_id, event_type=event_type
+    )
+    return {"events": events, "count": len(events)}
+
+
+@router.post("/fault/inject")
+def inject_fault_alias(payload: Dict[str, Any]) -> Dict[str, Any]:
+    session_id = payload.get("session_id", "default")
+    fault_type = payload.get("fault_type", "CONVEYOR_JAM")
+    return production_line_service.inject_fault(session_id, fault_type)
+
+
+@router.post("/fault/clear")
+def clear_fault_alias(payload: Dict[str, Any]) -> Dict[str, Any]:
+    session_id = payload.get("session_id", "default")
+    return production_line_service.clear_fault(session_id)
+
+
+@router.get("/sensors")
+def get_sensors_alias(session_id: str = Query("default")) -> Dict[str, Any]:
+    engine = production_line_service.get_or_create_session(session_id)
+    return engine.sensors.to_dict()
+
+
+@router.get("/actuators")
+def get_actuators_alias(session_id: str = Query("default")) -> Dict[str, Any]:
+    engine = production_line_service.get_or_create_session(session_id)
+    return engine.actuators.to_dict()
+
+
+# -----------------------------------------------------------------------------
 # Session Lifecycle & Controls
 # -----------------------------------------------------------------------------
 

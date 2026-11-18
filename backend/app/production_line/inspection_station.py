@@ -4,10 +4,11 @@ import time
 from typing import Any, Dict, Optional
 import numpy as np
 
-from backend.app.production_line.models import StationPositions
+from backend.app.production_line.models import ProductStatus, StationPositions
 from backend.app.production_line.product import Product
 from backend.app.vision.defect_detection import DefectDetector
 from backend.app.vision.synthetic_samples import (
+    SAMPLE_REGISTRY,
     base64_to_cv2,
     generate_sample_image,
 )
@@ -24,30 +25,37 @@ class InspectionStation:
 
     def execute_inspection(self, product: Product) -> Dict[str, Any]:
         """Execute real OpenCV defect detection on the given product.
-        Updates product inspection_result and returns binary feature flags."""
+        Updates product inspection_result and returns binary feature flags.
+        Does NOT silently fall back to VG-001 or fabricate data."""
         self.busy = True
         self.current_product = product
         start_t = time.perf_counter()
 
         img: Optional[np.ndarray] = None
-        sample_label = product.sample_id or product.name or "VG-001"
+        sample_label = product.sample_id or product.name or "UNKNOWN"
 
         try:
             # 1. Custom image if uploaded
             if product.custom_image_base64:
                 img = base64_to_cv2(product.custom_image_base64)
+                if img is None:
+                    raise ValueError(
+                        f"Invalid or corrupted custom image payload for product '{product.product_id}'"
+                    )
 
             # 2. Synthetic sample if sample_id provided
-            if img is None and product.sample_id:
-                try:
-                    img = generate_sample_image(product.sample_id)
-                except Exception:
-                    img = None
+            elif product.sample_id:
+                if product.sample_id not in SAMPLE_REGISTRY:
+                    raise ValueError(
+                        f"Invalid synthetic sample ID '{product.sample_id}' for product '{product.product_id}'"
+                    )
+                img = generate_sample_image(product.sample_id)
+                sample_label = product.sample_id
 
-            # 3. Fallback to default benchmark VG-001
-            if img is None:
-                img = generate_sample_image("VG-001")
-                sample_label = "VG-001"
+            else:
+                raise ValueError(
+                    f"Product '{product.product_id}' has neither custom image nor valid sample ID"
+                )
 
             # Run actual classical OpenCV inspection
             result_obj = self.detector.analyze(img, sample_id_or_filename=sample_label)
@@ -88,6 +96,18 @@ class InspectionStation:
             }
 
             return feature_flags
+
+        except Exception as e:
+            self.last_inspection_time_ms = round((time.perf_counter() - start_t) * 1000.0, 2)
+            product.status = ProductStatus.ERROR
+            product.fault_reason = f"INSPECTION_FAILURE: {str(e)}"
+            product.inspection_result = {
+                "sample_id": sample_label,
+                "status": "ERROR",
+                "error": str(e),
+                "processing_time_ms": self.last_inspection_time_ms,
+            }
+            raise e
 
         finally:
             self.busy = False

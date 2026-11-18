@@ -14,7 +14,14 @@ import type { ProductionLineFullState } from '../../types';
 import { RefreshCw, AlertCircle, Factory } from 'lucide-react';
 
 export const ProductionLineDashboard: React.FC = () => {
-  const [sessionId] = useState<string>('default');
+  const [sessionId] = useState<string>(() => {
+    const key = 'visionguard_production_session';
+    const existing = typeof window !== 'undefined' ? sessionStorage.getItem(key) : null;
+    if (existing) return existing;
+    const newId = `prod-${Math.random().toString(36).substring(2, 9)}`;
+    if (typeof window !== 'undefined') sessionStorage.setItem(key, newId);
+    return newId;
+  });
   const [state, setState] = useState<ProductionLineFullState | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,8 +51,8 @@ export const ProductionLineDashboard: React.FC = () => {
   useEffect(() => {
     if (!state) return;
     const isLineRunning =
-      state.line_state === 'RUNNING' &&
-      !state.conveyor.is_paused &&
+      Boolean(state.conveyor.running || state.conveyor.is_running) &&
+      !Boolean(state.conveyor.paused || state.conveyor.is_paused) &&
       !state.conveyor.emergency_stopped &&
       !state.fault_state.has_fault;
 
@@ -297,8 +304,8 @@ export const ProductionLineDashboard: React.FC = () => {
 
       {/* Simulation Controls & Product Injection Bar */}
       <SimulationControls
-        isRunning={state.line_state === 'RUNNING'}
-        isPaused={state.conveyor.is_paused}
+        isRunning={Boolean(state.conveyor.running || state.conveyor.is_running)}
+        isPaused={Boolean(state.conveyor.paused || state.conveyor.is_paused)}
         speed={state.conveyor.speed}
         emergencyStopped={state.conveyor.emergency_stopped}
         onStart={handleStart}

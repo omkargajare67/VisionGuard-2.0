@@ -44,6 +44,7 @@ class SimulationEngine:
 
         # Fault management
         self.active_fault: Optional[str] = None
+        self.fault_tick: Optional[int] = None
         self._product_counter: int = 0
 
     def add_product(
@@ -187,13 +188,14 @@ class SimulationEngine:
         )
         self.event_manager.record(
             event_type=EventType.EMERGENCY_RESET,
-            description="Emergency stop cleared. System returned to IDLE.",
+            description="Emergency stop cleared. System returned to IDLE (operator must restart conveyor).",
             simulation_tick=self.simulation_tick,
             state=LineState.IDLE,
         )
 
     def inject_fault(self, fault_type: str) -> None:
         self.active_fault = fault_type
+        self.fault_tick = self.simulation_tick
         self.conveyor.stop()
         self.actuators.update_conveyor_state(False)
         self.line_controller.transition_to(
@@ -213,6 +215,7 @@ class SimulationEngine:
     def clear_fault(self) -> None:
         old_fault = self.active_fault
         self.active_fault = None
+        self.fault_tick = None
         self.line_controller.transition_to(
             LineState.IDLE,
             "FAULT_CLEARED",
@@ -220,7 +223,7 @@ class SimulationEngine:
         )
         self.event_manager.record(
             event_type=EventType.FAULT_CLEARED,
-            description=f"Fault {old_fault} cleared.",
+            description=f"Fault {old_fault} cleared. Conveyor remains stopped until explicitly started.",
             simulation_tick=self.simulation_tick,
             state=LineState.IDLE,
         )
@@ -269,13 +272,36 @@ class SimulationEngine:
                     state=self.line_controller.state,
                 )
 
-        # 2. Advance conveyor movement
+        # 2. Advance conveyor movement with collision prevention and station interlocking
         delta = self.conveyor.advance_tick(self.simulation_tick)
         if delta > 0.0:
-            for prod in self.active_products:
-                # Do not advance product if it is currently waiting/under inspection
-                if prod.status not in [ProductStatus.INSPECTING, ProductStatus.WAITING_FOR_INSPECTION]:
-                    prod.update_position(delta, max_pos=self.positions.LINE_END)
+            # Sort products descending by position so lead products move first
+            sorted_products = sorted(self.active_products, key=lambda p: p.position, reverse=True)
+            min_spacing = 10.0
+
+            # Identify if inspection station is occupied
+            station_occupied = any(
+                p.status in [ProductStatus.INSPECTING, ProductStatus.WAITING_FOR_INSPECTION]
+                for p in self.active_products
+            )
+
+            for i, prod in enumerate(sorted_products):
+                # Workpieces being actively inspected do not advance
+                if prod.status in [ProductStatus.INSPECTING, ProductStatus.WAITING_FOR_INSPECTION]:
+                    continue
+
+                new_pos = prod.position + delta
+
+                # Collision prevention with lead product ahead
+                if i > 0:
+                    lead_prod = sorted_products[i - 1]
+                    new_pos = min(new_pos, lead_prod.position - min_spacing)
+
+                # Prevent trailing products from entering an occupied inspection station
+                if station_occupied and prod.position < self.positions.INSPECTION_STATION:
+                    new_pos = min(new_pos, self.positions.INSPECTION_STATION - min_spacing)
+
+                prod.position = max(prod.position, min(self.positions.LINE_END, new_pos))
 
         # 3. Sensor evaluations
         sensor_events = self.sensors.update_all(self.active_products, self.simulation_tick)
@@ -324,52 +350,97 @@ class SimulationEngine:
                     state=LineState.INSPECTION,
                 )
 
-                # Execute actual OpenCV inspection!
-                features = self.inspection_station.execute_inspection(prod)
-                self.metrics.record_inspection(
-                    self.inspection_station.last_inspection_time_ms, features
-                )
+                try:
+                    # Execute actual OpenCV inspection!
+                    features = self.inspection_station.execute_inspection(prod)
+                    self.metrics.record_inspection(
+                        self.inspection_station.last_inspection_time_ms, features
+                    )
 
-                self.event_manager.record(
-                    event_type=EventType.INSPECTION_COMPLETED,
-                    description=f"Inspection complete for {prod.product_id}. Flags: D={features['D']}, S={features['S']}, C={features['C']}, L={features['L']}, M={features['M']}, G={features['G']}",
-                    simulation_tick=self.simulation_tick,
-                    product_id=prod.product_id,
-                    station="INSPECTION_STATION",
-                    state=LineState.INSPECTION,
-                    data={"features": features},
-                )
+                    self.event_manager.record(
+                        event_type=EventType.INSPECTION_COMPLETED,
+                        description=f"Inspection complete for {prod.product_id}. Flags: D={features['D']}, S={features['S']}, C={features['C']}, L={features['L']}, M={features['M']}, G={features['G']}",
+                        simulation_tick=self.simulation_tick,
+                        product_id=prod.product_id,
+                        station="INSPECTION_STATION",
+                        state=LineState.INSPECTION,
+                        data={"features": features},
+                    )
 
-                # Process decision via DEAM Logic or 8086 + 8255 PPI
-                self.line_controller.transition_to(
-                    LineState.DECISION,
-                    "EVALUATING_QUALITY_DECISION",
-                    self.simulation_tick,
-                )
-                decision_info = self.line_controller.process_decision(
-                    prod, features, self.simulation_tick
-                )
+                    # Process decision via DEAM Logic or 8086 + 8255 PPI
+                    self.line_controller.transition_to(
+                        LineState.DECISION,
+                        "EVALUATING_QUALITY_DECISION",
+                        self.simulation_tick,
+                    )
+                    decision_info = self.line_controller.process_decision(
+                        prod, features, self.simulation_tick
+                    )
 
-                prod.transition_to(ProductStatus.READY_FOR_SORTING)
-                self.line_controller.transition_to(
-                    LineState.CONVEYOR_MOVEMENT,
-                    "DECISION_COMPLETE_RESUME_MOVEMENT",
-                    self.simulation_tick,
-                )
+                    prod.transition_to(ProductStatus.READY_FOR_SORTING)
+                    self.line_controller.transition_to(
+                        LineState.CONVEYOR_MOVEMENT,
+                        "DECISION_COMPLETE_RESUME_MOVEMENT",
+                        self.simulation_tick,
+                    )
 
-                self.event_manager.record(
-                    event_type=EventType.DEAM_DECISION_GENERATED,
-                    description=f"Controller verdict for {prod.product_id}: {decision_info['verdict']} (via {decision_info['controller_mode']})",
-                    simulation_tick=self.simulation_tick,
-                    product_id=prod.product_id,
-                    station="CONTROLLER",
-                    controller_mode=decision_info["controller_mode"],
-                    state=LineState.CONVEYOR_MOVEMENT,
-                    data=decision_info,
-                )
+                    self.event_manager.record(
+                        event_type=EventType.DEAM_DECISION_GENERATED,
+                        description=f"Controller verdict for {prod.product_id}: {decision_info['verdict']} (via {decision_info['controller_mode']})",
+                        simulation_tick=self.simulation_tick,
+                        product_id=prod.product_id,
+                        station="CONTROLLER",
+                        controller_mode=decision_info["controller_mode"],
+                        state=LineState.CONVEYOR_MOVEMENT,
+                        data=decision_info,
+                    )
+                except Exception as e:
+                    # Inspection or Controller failure must be treated as a production fault, NOT a quality rejection!
+                    self.active_fault = f"INSPECTION_FAILURE: {str(e)}"
+                    self.fault_tick = self.simulation_tick
+                    self.conveyor.stop()
+                    self.actuators.update_conveyor_state(False)
+                    self.line_controller.transition_to(
+                        LineState.ERROR,
+                        f"FAULT_{prod.product_id}",
+                        self.simulation_tick,
+                    )
+                    self.metrics.record_fault()
+                    self.event_manager.record(
+                        event_type=EventType.FAULT_INJECTED,
+                        description=f"Inspection/Controller failure on product {prod.product_id}: {str(e)}",
+                        simulation_tick=self.simulation_tick,
+                        product_id=prod.product_id,
+                        station="INSPECTION_STATION",
+                        state=LineState.ERROR,
+                        data={"error": str(e)},
+                    )
+                    return
 
             # Station C: Sorting Station (Position 70)
             if prod.position >= self.positions.SORTING_STATION and prod.lane is None:
+                if prod.sorting_result not in ["PASS", "REJECT"]:
+                    # Cannot sort without valid decision!
+                    self.active_fault = f"UNINSPECTED_ROUTING_FAULT: Product {prod.product_id} reached sorting without verified decision"
+                    self.fault_tick = self.simulation_tick
+                    self.conveyor.stop()
+                    self.actuators.update_conveyor_state(False)
+                    self.line_controller.transition_to(
+                        LineState.ERROR,
+                        "INVALID_SORTING_STATE",
+                        self.simulation_tick,
+                    )
+                    self.metrics.record_fault()
+                    self.event_manager.record(
+                        event_type=EventType.FAULT_INJECTED,
+                        description=f"System interlock: Product {prod.product_id} reached sorting without verified decision.",
+                        simulation_tick=self.simulation_tick,
+                        product_id=prod.product_id,
+                        station="SORTING_STATION",
+                        state=LineState.ERROR,
+                    )
+                    return
+
                 self.line_controller.transition_to(
                     LineState.SORTING,
                     "REACHED_SORTING_STATION",
@@ -447,6 +518,7 @@ class SimulationEngine:
         """Reset all simulation subsystems to power-on defaults."""
         self.simulation_tick = 0
         self.active_fault = None
+        self.fault_tick = None
         self._product_counter = 0
 
         self.conveyor.reset()
@@ -463,11 +535,21 @@ class SimulationEngine:
         self.completed_products.clear()
 
     def get_state(self) -> Dict[str, Any]:
-        """Return rich, complete state snapshot of the virtual production line."""
+        """Return rich, complete state snapshot of the virtual production line conforming to contract."""
+        fault_state = {
+            "has_fault": self.active_fault is not None or self.line_controller.state == LineState.ERROR,
+            "description": self.active_fault,
+            "fault_tick": self.fault_tick,
+        }
+
         return {
             "session_id": self.session_id,
             "simulation_tick": self.simulation_tick,
+            "line_state": self.line_controller.state,
+            "controller_mode": self.line_controller.controller_mode,
             "conveyor": self.conveyor.to_dict(),
+            "fault_state": fault_state,
+            "active_fault": self.active_fault,
             "sensors": self.sensors.to_dict(),
             "inspection_station": self.inspection_station.to_dict(),
             "sorting_station": self.sorting_station.to_dict(),
@@ -478,6 +560,14 @@ class SimulationEngine:
                 queued_count=len(self.queue),
             ),
             "station_positions": {
+                "ENTRY": self.positions.PRODUCT_ENTRY,
+                "SENSOR_IR1": self.positions.IR_SENSOR_1,
+                "INSPECTION": self.positions.INSPECTION_STATION,
+                "SENSOR_IR2": self.positions.INSPECTION_STATION,
+                "SENSOR_IR3": self.positions.SORTING_STATION,
+                "SORTING_GATE": self.positions.SORTING_STATION,
+                "EXIT_SENSOR": self.positions.EXIT_SENSOR,
+                "EXIT": self.positions.LINE_END,
                 "entry": self.positions.PRODUCT_ENTRY,
                 "ir_sensor_1": self.positions.IR_SENSOR_1,
                 "inspection_station": self.positions.INSPECTION_STATION,
@@ -489,5 +579,4 @@ class SimulationEngine:
             "active_products": [p.to_dict() for p in self.active_products],
             "completed_products": [p.to_dict() for p in reversed(self.completed_products[-50:])],
             "recent_events": self.event_manager.get_events(limit=40),
-            "active_fault": self.active_fault,
         }

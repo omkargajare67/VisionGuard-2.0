@@ -26,14 +26,17 @@ export const ConveyorVisualization: React.FC<ConveyorVisualizationProps> = ({
   onSelectProduct,
   lineState,
 }) => {
-  const isRunning = conveyor.is_running && !conveyor.is_paused && !conveyor.emergency_stopped;
-  const gateAngle = actuators.diverter_gate.angle_deg || 0;
+  const isRunning =
+    Boolean(conveyor.running || conveyor.is_running) &&
+    !Boolean(conveyor.paused || conveyor.is_paused) &&
+    !conveyor.emergency_stopped;
+  const gateAngle = actuators?.diverter_gate?.angle_deg ?? 0;
 
-  // Sensor states
-  const ir1Active = sensors['IR-01']?.active ?? false;
-  const ir2Active = sensors['IR-02']?.active ?? false;
-  const ir3Active = sensors['IR-03']?.active ?? false;
-  const exitActive = sensors['EXIT-01']?.active ?? false;
+  // Sensor states (compatible with both 'IR-01' and 'ir_sensor_1' keys)
+  const ir1Active = sensors['IR-01']?.active ?? sensors['ir_sensor_1']?.active ?? false;
+  const ir2Active = sensors['IR-02']?.active ?? sensors['ir_sensor_2']?.active ?? false;
+  const ir3Active = sensors['IR-03']?.active ?? sensors['ir_sensor_3']?.active ?? false;
+  const exitActive = sensors['EXIT-01']?.active ?? sensors['exit_sensor']?.active ?? false;
 
   return (
     <div className="relative w-full rounded-2xl bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 border border-slate-800 p-5 shadow-2xl overflow-hidden select-none">

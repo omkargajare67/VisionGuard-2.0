@@ -17,24 +17,45 @@ class SortingStation:
     def route_product(
         self, product: Product, actuators: ActuatorSubsystem
     ) -> Dict[str, Any]:
-        """Activate sorting diverter, LEDs, buzzer, and route to pass or reject lane."""
+        """Activate sorting diverter, LEDs, buzzer, and route to pass or reject lane.
+        Requires a valid inspection decision. Does not double-count or assume missing decision is REJECT."""
+        # Prevent duplicate routing of the same product
+        if product.lane is not None:
+            return {
+                "product_id": product.product_id,
+                "decision": product.sorting_result,
+                "lane": product.lane,
+                "diverter_active": actuators.reject_gate == 1,
+                "green_led": actuators.green_led,
+                "red_led": actuators.red_led,
+                "buzzer": actuators.alarm_buzzer,
+                "pass_total": self.pass_lane_count,
+                "reject_total": self.reject_lane_count,
+            }
+
+        decision = product.sorting_result
+        if decision not in ["PASS", "REJECT"]:
+            raise ValueError(
+                f"Cannot route product '{product.product_id}': missing or invalid sorting decision ('{decision}'). "
+                f"Inspection and controller decision must precede sorting actuation."
+            )
+
         self.busy = True
         self.current_product = product
 
-        decision = product.sorting_result or "REJECT"
-
-        if decision == "PASS":
-            product.lane = "PASS_LANE"
-            product.transition_to(ProductStatus.PASSED)
-            self.pass_lane_count += 1
-            actuators.set_sorting_action("PASS")
-        else:
-            product.lane = "REJECT_LANE"
-            product.transition_to(ProductStatus.REJECTED)
-            self.reject_lane_count += 1
-            actuators.set_sorting_action("REJECT")
-
-        self.busy = False
+        try:
+            if decision == "PASS":
+                product.lane = "PASS_LANE"
+                product.transition_to(ProductStatus.PASSED)
+                self.pass_lane_count += 1
+                actuators.set_sorting_action("PASS")
+            else:
+                product.lane = "REJECT_LANE"
+                product.transition_to(ProductStatus.REJECTED)
+                self.reject_lane_count += 1
+                actuators.set_sorting_action("REJECT")
+        finally:
+            self.busy = False
 
         return {
             "product_id": product.product_id,
