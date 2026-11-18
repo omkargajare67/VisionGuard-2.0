@@ -7,15 +7,17 @@ interface SortingStationPanelProps {
 }
 
 export const SortingStationPanel: React.FC<SortingStationPanelProps> = ({ actuators }) => {
-  const gateAngle = actuators.diverter_gate.angle_deg || 0;
+  const gateAngle = actuators?.diverter_gate?.angle_deg ?? (actuators as any)?.gate_angle_degrees ?? 0;
   const isDiverting = gateAngle > 0;
-  const portBByte = actuators.ppi_port_b_byte ?? 0;
+  const portBByte = actuators?.ppi_port_b_byte ?? 0;
   const portBHex = `0x${portBByte.toString(16).toUpperCase().padStart(2, '0')}`;
   const portBBin = portBByte.toString(2).padStart(8, '0');
 
-  const totalSorted = actuators.pass_lane_count + actuators.reject_lane_count;
-  const passRate = totalSorted > 0 ? ((actuators.pass_lane_count / totalSorted) * 100).toFixed(1) : '0.0';
-  const rejectRate = totalSorted > 0 ? ((actuators.reject_lane_count / totalSorted) * 100).toFixed(1) : '0.0';
+  const passCount = actuators?.pass_lane_count ?? (actuators as any)?.pass_count ?? 0;
+  const rejectCount = actuators?.reject_lane_count ?? (actuators as any)?.reject_count ?? 0;
+  const totalSorted = passCount + rejectCount;
+  const passRate = totalSorted > 0 ? ((passCount / totalSorted) * 100).toFixed(1) : '0.0';
+  const rejectRate = totalSorted > 0 ? ((rejectCount / totalSorted) * 100).toFixed(1) : '0.0';
 
   return (
     <div className="rounded-2xl bg-slate-900 border border-slate-800 p-5 shadow-xl flex flex-col justify-between">
@@ -54,7 +56,7 @@ export const SortingStationPanel: React.FC<SortingStationPanelProps> = ({ actuat
               <span>{passRate}%</span>
             </div>
             <div className="text-2xl font-bold text-emerald-200 mt-1">
-              {actuators.pass_lane_count}
+              {passCount}
               <span className="text-xs text-emerald-500/80 font-normal ml-1">units</span>
             </div>
           </div>
@@ -68,7 +70,7 @@ export const SortingStationPanel: React.FC<SortingStationPanelProps> = ({ actuat
               <span>{rejectRate}%</span>
             </div>
             <div className="text-2xl font-bold text-rose-200 mt-1">
-              {actuators.reject_lane_count}
+              {rejectCount}
               <span className="text-xs text-rose-500/80 font-normal ml-1">units</span>
             </div>
           </div>
@@ -113,14 +115,14 @@ export const SortingStationPanel: React.FC<SortingStationPanelProps> = ({ actuat
 
             {/* Buzzer */}
             <div className={`p-2 rounded-lg border text-center ${
-              actuators.buzzer
+              Boolean(actuators.buzzer ?? (actuators as any).alarm_buzzer)
                 ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 font-bold shadow-sm shadow-amber-500/40 animate-pulse'
                 : 'bg-slate-950 border-slate-800 text-slate-500'
             }`}>
               <div className="text-[9px] text-slate-500">ALARM BUZZER (PB4)</div>
               <div className="flex items-center justify-center gap-1">
-                {actuators.buzzer && <Volume2 className="w-3 h-3" />}
-                {actuators.buzzer ? 'SOUNDING' : 'OFF'}
+                {Boolean(actuators.buzzer ?? (actuators as any).alarm_buzzer) && <Volume2 className="w-3 h-3" />}
+                {Boolean(actuators.buzzer ?? (actuators as any).alarm_buzzer) ? 'SOUNDING' : 'OFF'}
               </div>
             </div>
           </div>

@@ -6,10 +6,11 @@ interface EventTimelineProps {
   events: EventRecordDTO[];
 }
 
-export const EventTimeline: React.FC<EventTimelineProps> = ({ events }) => {
+export const EventTimeline: React.FC<EventTimelineProps> = ({ events = [] }) => {
   const [filterType, setFilterType] = React.useState<string>('ALL');
 
-  const filteredEvents = events.filter((ev) => {
+  const safeEvents = events || [];
+  const filteredEvents = safeEvents.filter((ev) => {
     if (filterType === 'ALL') return true;
     return ev.event_type === filterType;
   });
@@ -36,7 +37,7 @@ export const EventTimeline: React.FC<EventTimelineProps> = ({ events }) => {
             onChange={(e) => setFilterType(e.target.value)}
             className="bg-slate-950 border border-slate-800 text-slate-300 text-xs rounded-lg px-2.5 py-1 font-mono outline-none cursor-pointer"
           >
-            <option value="ALL">All Events ({events.length})</option>
+            <option value="ALL">All Events ({safeEvents.length})</option>
             <option value="PRODUCT_ENTERED">Product Entered</option>
             <option value="INSPECTION_COMPLETED">Inspection Completed</option>
             <option value="SORTING_DIVERTED">Sorting Diverted</option>

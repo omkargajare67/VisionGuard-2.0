@@ -31,7 +31,7 @@ export const FaultInjectionPanel: React.FC<FaultInjectionPanelProps> = ({
           </div>
         </div>
 
-        {faultState.has_fault ? (
+        {faultState?.has_fault ? (
           <button
             onClick={onClearFault}
             disabled={isLoading}

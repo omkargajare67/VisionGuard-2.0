@@ -63,15 +63,33 @@ class ActuatorSubsystem:
         self.reject_count = 0
 
     def to_dict(self) -> Dict[str, Any]:
+        gate_angle = round(self.gate_angle_degrees, 1)
+        port_b = (
+            (1 if self.conveyor_motor else 0)
+            | ((1 if self.reject_gate else 0) << 1)
+            | ((1 if self.green_led else 0) << 2)
+            | ((1 if self.red_led else 0) << 3)
+            | ((1 if self.alarm_buzzer else 0) << 4)
+            | ((1 if self.system_busy else 0) << 5)
+        )
         return {
-            "conveyor_motor": self.conveyor_motor,
+            "conveyor_motor": bool(self.conveyor_motor),
             "reject_gate": self.reject_gate,
-            "gate_angle_degrees": round(self.gate_angle_degrees, 1),
-            "green_led": self.green_led,
-            "red_led": self.red_led,
-            "alarm_buzzer": self.alarm_buzzer,
-            "system_busy": self.system_busy,
+            "gate_angle_degrees": gate_angle,
+            "diverter_gate": {
+                "angle_deg": gate_angle,
+                "state": "DIVERT" if self.reject_gate else "IDLE",
+                "target_angle": 45.0 if self.reject_gate else 0.0,
+            },
+            "green_led": bool(self.green_led),
+            "red_led": bool(self.red_led),
+            "alarm_buzzer": bool(self.alarm_buzzer),
+            "buzzer": bool(self.alarm_buzzer),
+            "system_busy": bool(self.system_busy),
             "pass_count": self.pass_count,
+            "pass_lane_count": self.pass_count,
             "reject_count": self.reject_count,
+            "reject_lane_count": self.reject_count,
             "total_sorted": self.pass_count + self.reject_count,
+            "ppi_port_b_byte": port_b,
         }
