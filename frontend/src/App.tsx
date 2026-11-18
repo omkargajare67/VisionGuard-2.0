@@ -73,7 +73,7 @@ export const App: React.FC = () => {
   const isBackendOnline = healthData?.status === 'running' && !error;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col overflow-x-hidden selection:bg-[#F59A16]/30 selection:text-[#F59A16]">
+    <div className="min-h-screen bg-[#F5F6F7] text-[#252B35] flex flex-col overflow-x-hidden selection:bg-[#F59A16]/20 selection:text-[#F59A16]">
       <Navbar
         backendOnline={error ? false : isBackendOnline}
         stage={5}
@@ -83,11 +83,11 @@ export const App: React.FC = () => {
 
       <ErrorBoundary fallbackTitle="VisionGuard Interface Error">
         {activeTab === 'home' ? (
-          <div className="flex-1 w-full bg-slate-50">
+          <div className="flex-1 w-full">
             <HomePage onNavigate={setActiveTab} />
           </div>
         ) : (
-          <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
+          <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {activeTab === 'production' ? (
               <ProductionLineDashboard />
             ) : activeTab === '8086' ? (
@@ -109,8 +109,13 @@ export const App: React.FC = () => {
         )}
       </ErrorBoundary>
 
-      <footer className="border-t border-slate-900 bg-slate-950 px-6 py-4 text-center text-xs text-slate-500">
-        VisionGuard 2.0 &bull; Intelligent Quality Inspection &amp; Automated Sorting System &bull; DEAM Capstone
+      <footer className="border-t border-slate-200 bg-white px-6 py-5 text-xs text-[#667085] mt-auto">
+        <div className="max-w-[1440px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+          <span>VisionGuard 2.0 &bull; Intelligent Quality Inspection &amp; Automated Sorting System</span>
+          <span className="font-mono text-[11px] text-slate-400">
+            DEAM Capstone Project &bull; Academic Engineering Platform
+          </span>
+        </div>
       </footer>
     </div>
   );

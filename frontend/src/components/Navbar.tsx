@@ -28,8 +28,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-[#111827] border-b border-slate-800 shadow-lg">
-      <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between">
+    <header className="sticky top-0 z-50 w-full bg-[#151922] border-b border-slate-800 shadow-md">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
         {/* ========================================================= */}
         {/* LEFT: BRAND & LOGO (Exact Reference Design)             */}
         {/* ========================================================= */}

@@ -84,13 +84,13 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
           <strong>Error:</strong> {error}
         </div>
       )}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl bg-white border border-slate-200 shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200">
         <div>
           <div className="w-10 h-1 bg-[#F59A16] rounded-full mb-2" />
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-            Production Monitoring &amp; Quality Analytics
+          <h1 className="text-3xl font-extrabold text-[#252B35] tracking-tight">
+            Quality &amp; Telemetry Monitoring
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-sm text-[#667085] mt-1">
             Real-time industrial telemetry, yield KPIs, defect distribution Pareto and system health
             {healthData?.stage ? ` (Stage ${healthData.stage})` : ''}
           </p>

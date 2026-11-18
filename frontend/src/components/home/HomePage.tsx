@@ -44,7 +44,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-slate-950/40" />
 
         {/* Hero Content Container */}
-        <div className="relative z-10 max-w-7xl mx-auto px-6 py-16 lg:py-24 w-full">
+        <div className="relative z-10 max-w-[1440px] mx-auto px-6 py-16 lg:py-24 w-full">
           <div className="max-w-2xl lg:max-w-3xl space-y-6">
             {/* Pill Badge */}
             <div className="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-slate-200 text-xs font-mono font-medium shadow-sm">
@@ -92,7 +92,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
       {/* 2. TECHNOLOGY STRIP (Matches Reference Design Strip)     */}
       {/* ========================================================= */}
       <section className="w-full bg-white border-y border-slate-200 shadow-sm py-6">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-[1440px] mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
             {/* Tech 1 */}
             <div className="flex flex-col items-center justify-center p-3 text-center group cursor-pointer" onClick={() => onNavigate('vision')}>
@@ -155,7 +155,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
       {/* 3. WORKFLOW SECTION (7 Connected Workflow Cards)          */}
       {/* ========================================================= */}
       <section className="w-full bg-[#F5F6F7] py-16 lg:py-20 border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-[1440px] mx-auto px-6">
           {/* Section Header */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
             <div>
@@ -298,7 +298,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
       {/* 4. PROJECT MODULES SHOWCASE (Explore VisionGuard)        */}
       {/* ========================================================= */}
       <section id="modules-section" className="w-full bg-white py-20 px-6">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-[1440px] mx-auto">
           {/* Section Heading */}
           <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
             <div className="inline-flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-[#F59A16]">
@@ -503,7 +503,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
       {/* 5. INDUSTRIAL FOOTER                                      */}
       {/* ========================================================= */}
       <footer className="w-full bg-slate-950 text-slate-400 py-12 px-6 border-t border-slate-900">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center space-x-3">
             {/* Logo */}
             <div className="relative w-8 h-8 rounded-lg border-2 border-[#F59A16] flex items-center justify-center bg-[#F59A16]/10">

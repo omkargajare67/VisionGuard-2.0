@@ -1,14 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Cpu,
-  Layers,
-  Database,
-  Calculator,
-  Activity,
-  AlertCircle,
-  Timer,
   FileCode,
-  Sparkles,
+  BookOpen,
+  Binary,
+  Cpu,
+  Calculator,
+  Database,
+  Activity,
+  Layers,
+  ListOrdered,
+  Timer,
+  AlertCircle,
+  RefreshCw,
+  Terminal,
 } from 'lucide-react';
 import type { CPUFullState, InspectionResult } from '../../types';
 import { microprocessorApi } from '../../services/api';
@@ -26,20 +30,33 @@ interface MicroprocessorLabProps {
   latestInspectionResult?: InspectionResult | null;
 }
 
-type TabType =
+type WorkspaceId =
   | 'assembly'
+  | 'examples'
+  | 'machine_code'
   | 'registers'
-  | 'memory'
   | 'alu'
+  | 'memory'
   | 'bus'
   | 'ppi'
-  | 'interrupts'
-  | 'timers';
+  | 'trace'
+  | 'timers'
+  | 'interrupts';
+
+interface NavGroup {
+  groupName: string;
+  items: Array<{
+    id: WorkspaceId;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    badge?: string;
+  }>;
+}
 
 export const MicroprocessorLab: React.FC<MicroprocessorLabProps> = ({
   latestInspectionResult,
 }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('assembly');
+  const [activeWorkspace, setActiveWorkspace] = useState<WorkspaceId>('assembly');
   const [sessionId] = useState<string>(() => `session-8086-${Date.now().toString(36)}`);
   const [cpuState, setCpuState] = useState<CPUFullState | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -57,7 +74,8 @@ export const MicroprocessorLab: React.FC<MicroprocessorLabProps> = ({
         const stateRes = await microprocessorApi.getCPUState(sessionId);
         setCpuState(stateRes);
       } catch (innerErr: unknown) {
-        const msg = innerErr instanceof Error ? innerErr.message : 'Failed to connect to 8086 simulator';
+        const msg =
+          innerErr instanceof Error ? innerErr.message : 'Failed to connect to 8086 simulator';
         setError(msg);
       }
     } finally {
@@ -78,185 +96,273 @@ export const MicroprocessorLab: React.FC<MicroprocessorLabProps> = ({
     }
   };
 
-  const tabs: Array<{ id: TabType; label: string; icon: React.ReactNode; badge?: string }> = [
-    { id: 'assembly', label: '8086 Assembler & Debugger', icon: <FileCode className="w-4 h-4" /> },
-    { id: 'registers', label: 'Registers & Flags', icon: <Cpu className="w-4 h-4" /> },
-    { id: 'memory', label: '20-bit Memory & Stack', icon: <Database className="w-4 h-4" /> },
-    { id: 'alu', label: 'ALU & Arithmetic Logic', icon: <Calculator className="w-4 h-4" /> },
-    { id: 'bus', label: 'Bus & BIU Prefetch Queue', icon: <Activity className="w-4 h-4" /> },
-    { id: 'ppi', label: '8255 PPI Sorting Interface', icon: <Layers className="w-4 h-4" />, badge: 'VisionGuard Core' },
-    { id: 'interrupts', label: 'IVT & Interrupts', icon: <AlertCircle className="w-4 h-4" /> },
-    { id: 'timers', label: '8253 PIT Timer', icon: <Timer className="w-4 h-4" /> },
+  const navGroups: NavGroup[] = [
+    {
+      groupName: 'PROGRAMMING',
+      items: [
+        { id: 'assembly', label: 'Assembly Editor', icon: FileCode },
+        { id: 'examples', label: 'Example Programs', icon: BookOpen },
+        { id: 'machine_code', label: 'Machine Code', icon: Binary },
+      ],
+    },
+    {
+      groupName: 'PROCESSOR',
+      items: [
+        { id: 'registers', label: 'Registers & Flags', icon: Cpu },
+        { id: 'alu', label: 'ALU & Logic', icon: Calculator },
+        { id: 'memory', label: 'Memory & Stack', icon: Database },
+      ],
+    },
+    {
+      groupName: 'ARCHITECTURE',
+      items: [
+        { id: 'bus', label: 'Bus & BIU Queue', icon: Activity },
+      ],
+    },
+    {
+      groupName: 'PERIPHERALS',
+      items: [
+        { id: 'ppi', label: '8255 PPI Interface', icon: Layers, badge: 'Core' },
+      ],
+    },
+    {
+      groupName: 'EXECUTION',
+      items: [
+        { id: 'trace', label: 'Execution Trace', icon: ListOrdered },
+        { id: 'timers', label: '8253 PIT Timer', icon: Timer },
+        { id: 'interrupts', label: 'Interrupts & IVT', icon: AlertCircle },
+      ],
+    },
   ];
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      {/* Header Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
-
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-          <div>
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-indigo-950 text-indigo-300 border border-indigo-700 font-mono">
-                DEAM UNIT 4: 8086 MICROPROCESSOR
-              </span>
-              <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-cyan-950 text-cyan-300 border border-cyan-700 font-mono">
-                DEAM UNIT 5: 8255 PPI & PERIPHERALS
-              </span>
-              <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-950 text-emerald-300 border border-emerald-700 flex items-center gap-1 font-mono">
-                <Sparkles className="w-3 h-3" />
-                STAGE 4 ACTIVE
-              </span>
-            </div>
-            <h1 className="text-2xl font-bold text-slate-100 tracking-tight flex items-center gap-2">
-              Educational Intel 8086 & 8255 PPI Simulation Laboratory
-            </h1>
-            <p className="text-sm text-slate-400 mt-1 max-w-3xl">
-              Simulating true 16-bit register architecture, 20-bit segmented physical memory, BIU 6-byte instruction prefetch queue, ALU flag generation, 256-entry IVT, and industrial automated sorting interface via Intel 8255 PPI.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 text-right font-mono">
-              <div className="text-[10px] text-slate-400">SESSION ID</div>
-              <div className="text-xs font-bold text-indigo-400">{sessionId}</div>
-            </div>
-          </div>
+    <div className="space-y-8 font-sans">
+      {/* ========================================================= */}
+      {/* PAGE HEADER                                               */}
+      {/* ========================================================= */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200">
+        <div>
+          <div className="w-10 h-1 bg-[#F59A16] rounded-full mb-2" />
+          <h1 className="text-3xl font-extrabold text-[#252B35] tracking-tight">
+            Intel 8086 &amp; 8255 PPI Laboratory
+          </h1>
+          <p className="text-sm text-[#667085] mt-1">
+            Explore processor registers, assembly execution, memory, peripheral interfacing and actuator control.
+          </p>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                  isActive
-                    ? 'bg-indigo-600 text-slate-100 shadow-md shadow-indigo-600/30'
-                    : 'bg-slate-950/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-slate-800'
-                }`}
-              >
-                {tab.icon}
-                <span>{tab.label}</span>
-                {tab.badge && (
-                  <span
-                    className={`ml-1 px-1.5 py-0.2 rounded text-[10px] uppercase tracking-wider font-bold ${
-                      isActive ? 'bg-indigo-900 text-indigo-200' : 'bg-cyan-950 text-cyan-300 border border-cyan-800'
-                    }`}
-                  >
-                    {tab.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+        <div className="flex items-center space-x-3 text-xs font-mono">
+          <div className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 shadow-sm text-slate-600">
+            Session: <strong className="text-slate-900">{sessionId}</strong>
+          </div>
+
+          <button
+            onClick={refreshState}
+            className="p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 shadow-sm transition-all cursor-pointer"
+            title="Refresh CPU State"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
       {error && (
-        <div className="p-4 bg-rose-950/60 border border-rose-800 rounded-xl text-rose-300 text-sm flex items-center justify-between">
+        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center justify-between">
           <span>{error}</span>
           <button
             onClick={initSession}
-            className="px-3 py-1 bg-rose-800 hover:bg-rose-700 text-slate-100 rounded text-xs transition-colors"
+            className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded text-xs font-semibold cursor-pointer"
           >
             Retry Connection
           </button>
         </div>
       )}
 
-      {/* Tab Panels */}
-      {loading && !cpuState ? (
-        <div className="p-16 text-center text-slate-400">
-          <div className="animate-spin w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto mb-3" />
-          <p className="text-sm font-mono">Initializing 8086 Virtual Microprocessor Session...</p>
-        </div>
-      ) : (
-        <div>
-          {/* TAB 1: Assembler & Trace */}
-          {activeTab === 'assembly' && (
-            <div className="space-y-6">
-              <AssemblyEditor
-                sessionId={sessionId}
-                cpuState={cpuState}
-                onStateUpdate={setCpuState}
-                onStepComplete={refreshState}
-              />
-              <ExecutionTrace
-                trace={cpuState?.execution_trace ?? []}
-                onClearTrace={() => {
-                  if (cpuState) {
-                    setCpuState({ ...cpuState, execution_trace: [] });
-                  }
-                }}
-              />
+      {/* ========================================================= */}
+      {/* TWO-COLUMN LAB WORKSPACE (Sidebar + Dedicated Content)     */}
+      {/* ========================================================= */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* LEFT SIDEBAR: Grouped Vertical Navigation (3 Cols) */}
+        <aside className="lg:col-span-3 space-y-4">
+          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
+            {navGroups.map((group) => (
+              <div key={group.groupName} className="space-y-1">
+                <div className="px-3 py-1 text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+                  {group.groupName}
+                </div>
+
+                <nav className="space-y-0.5">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeWorkspace === item.id;
+
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => setActiveWorkspace(item.id)}
+                        className={`w-full p-2.5 rounded-xl text-left transition-all flex items-center justify-between cursor-pointer group ${
+                          isActive
+                            ? 'bg-[#F59A16]/10 text-[#F59A16] font-bold border-l-4 border-[#F59A16] shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-l-4 border-transparent'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-2.5 min-w-0">
+                          <Icon
+                            className={`w-4 h-4 shrink-0 ${
+                              isActive ? 'text-[#F59A16]' : 'text-slate-400 group-hover:text-slate-700'
+                            }`}
+                          />
+                          <span className="text-xs truncate">{item.label}</span>
+                        </div>
+
+                        {item.badge && (
+                          <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-[#F59A16]/20 text-[#F59A16] shrink-0 ml-1">
+                            {item.badge}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </nav>
+              </div>
+            ))}
+          </div>
+
+          {/* Microprocessor Status Pill */}
+          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-2">
+            <div className="flex items-center space-x-2 text-xs font-bold text-[#252B35]">
+              <Terminal className="w-4 h-4 text-[#F59A16]" />
+              <span>CPU Execution State</span>
             </div>
-          )}
+            <div className="flex items-center justify-between text-xs font-mono pt-1 text-slate-600">
+              <span>Halted:</span>
+              <span className="font-bold text-slate-900">
+                {cpuState?.halted ? 'TRUE (HLT)' : 'FALSE (READY)'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-xs font-mono text-slate-600">
+              <span>Instruction Ptr (IP):</span>
+              <span className="font-bold text-[#F59A16]">
+                {cpuState?.registers?.special?.IP?.hex ?? '0x0000'}
+              </span>
+            </div>
+          </div>
+        </aside>
 
-          {/* TAB 2: Registers & Flags */}
-          {activeTab === 'registers' && (
-            <RegisterInspector
-              registers={cpuState?.registers ?? null}
-            />
-          )}
+        {/* RIGHT CONTENT AREA: Only One Active Workspace Displayed (9 Cols) */}
+        <main className="lg:col-span-9">
+          {loading && !cpuState ? (
+            <div className="p-12 text-center text-slate-400 bg-white rounded-2xl border border-slate-200">
+              <RefreshCw className="w-8 h-8 mx-auto animate-spin mb-3 text-[#F59A16]" />
+              <p className="text-xs font-mono">Connecting to 8086 Virtual Microprocessor Engine...</p>
+            </div>
+          ) : (
+            <>
+              {/* WORKSPACE: Assembly Editor & Debugger (Default) */}
+              {(activeWorkspace === 'assembly' ||
+                activeWorkspace === 'examples' ||
+                activeWorkspace === 'machine_code') && (
+                <div className="space-y-6">
+                  <AssemblyEditor
+                    sessionId={sessionId}
+                    cpuState={cpuState}
+                    onStateUpdate={setCpuState}
+                    onStepComplete={refreshState}
+                  />
+                </div>
+              )}
 
-          {/* TAB 3: Memory & Stack */}
-          {activeTab === 'memory' && (
-            <MemoryExplorer
-              sessionId={sessionId}
-              cs={cpuState?.registers?.segments?.CS?.hex ?? '0x1000'}
-              ip={cpuState?.registers?.special?.IP?.hex ?? '0x0000'}
-              ds={cpuState?.registers?.segments?.DS?.hex ?? '0x2000'}
-              ss={cpuState?.registers?.segments?.SS?.hex ?? '0x3000'}
-              sp={cpuState?.registers?.pointers?.SP?.hex ?? '0x0100'}
-            />
-          )}
+              {/* WORKSPACE: Registers & Flags */}
+              {activeWorkspace === 'registers' && (
+                <div className="space-y-6">
+                  <RegisterInspector registers={cpuState?.registers ?? null} />
+                </div>
+              )}
 
-          {/* TAB 4: ALU Visualizer */}
-          {activeTab === 'alu' && <ALUVisualizer />}
+              {/* WORKSPACE: ALU Visualizer */}
+              {activeWorkspace === 'alu' && (
+                <div className="space-y-6">
+                  <ALUVisualizer />
+                </div>
+              )}
 
-          {/* TAB 5: Bus & BIU Prefetch Queue */}
-          {activeTab === 'bus' && (
-            <BusVisualizer
-              busState={cpuState?.bus ?? null}
-              prefetchQueue={cpuState?.biu?.prefetch_queue ?? []}
-            />
-          )}
+              {/* WORKSPACE: Memory & Stack Explorer */}
+              {activeWorkspace === 'memory' && (
+                <div className="space-y-6">
+                  <MemoryExplorer
+                    sessionId={sessionId}
+                    cs={cpuState?.registers?.segments?.CS?.hex ?? '0x1000'}
+                    ip={cpuState?.registers?.special?.IP?.hex ?? '0x0000'}
+                    ds={cpuState?.registers?.segments?.DS?.hex ?? '0x2000'}
+                    ss={cpuState?.registers?.segments?.SS?.hex ?? '0x3000'}
+                    sp={cpuState?.registers?.pointers?.SP?.hex ?? '0x0100'}
+                  />
+                </div>
+              )}
 
-          {/* TAB 6: 8255 PPI Interface */}
-          {activeTab === 'ppi' && (
-            <PPI8255Panel
-              sessionId={sessionId}
-              ppiState={cpuState?.ppi ?? null}
-              onPPIUpdate={(newPPI) => {
-                if (cpuState) setCpuState({ ...cpuState, ppi: newPPI });
-              }}
-              latestInspectionResult={latestInspectionResult}
-            />
-          )}
+              {/* WORKSPACE: Bus & BIU Prefetch Queue */}
+              {activeWorkspace === 'bus' && (
+                <div className="space-y-6">
+                  <BusVisualizer
+                    busState={cpuState?.bus ?? null}
+                    prefetchQueue={cpuState?.biu?.prefetch_queue ?? []}
+                  />
+                </div>
+              )}
 
-          {/* TAB 7: Interrupts & IVT */}
-          {activeTab === 'interrupts' && (
-            <InterruptPanel
-              sessionId={sessionId}
-              cpuState={cpuState}
-              onStateUpdate={setCpuState}
-            />
-          )}
+              {/* WORKSPACE: 8255 PPI Actuator Interface */}
+              {activeWorkspace === 'ppi' && (
+                <div className="space-y-6">
+                  <PPI8255Panel
+                    sessionId={sessionId}
+                    ppiState={cpuState?.ppi ?? null}
+                    onPPIUpdate={(newPPI) => {
+                      if (cpuState) setCpuState({ ...cpuState, ppi: newPPI });
+                    }}
+                    latestInspectionResult={latestInspectionResult}
+                  />
+                </div>
+              )}
 
-          {/* TAB 8: Timers */}
-          {activeTab === 'timers' && (
-            <TimerPanel
-              sessionId={sessionId}
-              timerState={cpuState?.timers ?? null}
-              onStateUpdate={setCpuState}
-            />
+              {/* WORKSPACE: Execution Trace Log */}
+              {activeWorkspace === 'trace' && (
+                <div className="space-y-6">
+                  <ExecutionTrace
+                    trace={cpuState?.execution_trace ?? []}
+                    onClearTrace={() => {
+                      if (cpuState) {
+                        setCpuState({ ...cpuState, execution_trace: [] });
+                      }
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* WORKSPACE: 8253 PIT Timers */}
+              {activeWorkspace === 'timers' && (
+                <div className="space-y-6">
+                  <TimerPanel
+                    sessionId={sessionId}
+                    timerState={cpuState?.timers ?? null}
+                    onStateUpdate={setCpuState}
+                  />
+                </div>
+              )}
+
+              {/* WORKSPACE: Interrupts & IVT */}
+              {activeWorkspace === 'interrupts' && (
+                <div className="space-y-6">
+                  <InterruptPanel
+                    sessionId={sessionId}
+                    cpuState={cpuState}
+                    onStateUpdate={setCpuState}
+                  />
+                </div>
+              )}
+            </>
           )}
-        </div>
-      )}
+        </main>
+      </div>
     </div>
   );
 };
