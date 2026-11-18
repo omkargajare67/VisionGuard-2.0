@@ -1,137 +1,152 @@
-import React from 'react';
-import { Cpu, ShieldCheck, Eye, Activity, Binary, Terminal, Factory } from 'lucide-react';
+import React, { useState } from 'react';
+import { Menu, X } from 'lucide-react';
+
+export type NavTab = 'home' | 'vision' | 'deam' | '8086' | 'production' | 'monitoring';
 
 interface NavbarProps {
   backendOnline: boolean | null;
   stage: number;
-  activeTab: 'production' | '8086' | 'deam' | 'vision' | 'monitor';
-  onSelectTab: (tab: 'production' | '8086' | 'deam' | 'vision' | 'monitor') => void;
+  activeTab: NavTab;
+  onSelectTab: (tab: NavTab) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   backendOnline,
-  stage,
+  stage: _stage,
   activeTab,
   onSelectTab,
 }) => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const navItems: { id: NavTab; label: string }[] = [
+    { id: 'home', label: 'Home' },
+    { id: 'vision', label: 'Vision Inspection' },
+    { id: 'deam', label: 'DEAM Lab' },
+    { id: '8086', label: '8086 Lab' },
+    { id: 'production', label: 'Production Line' },
+    { id: 'monitoring', label: 'Monitoring' },
+  ];
+
   return (
-    <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        {/* Brand */}
-        <div className="flex items-center space-x-3 shrink-0">
-          <div className="p-2.5 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-600 shadow-lg shadow-cyan-500/20 text-white">
-            <Cpu className="w-6 h-6" />
+    <header className="sticky top-0 z-50 w-full bg-[#111827] border-b border-slate-800 shadow-lg">
+      <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between">
+        {/* ========================================================= */}
+        {/* LEFT: BRAND & LOGO (Exact Reference Design)             */}
+        {/* ========================================================= */}
+        <div
+          onClick={() => onSelectTab('home')}
+          className="flex items-center space-x-3 cursor-pointer select-none group"
+        >
+          {/* Custom Geometric Camera / Aperture Logo in Orange */}
+          <div className="relative w-8 h-8 rounded-lg border-2 border-[#F59A16] flex items-center justify-center bg-[#F59A16]/10 shadow-sm shadow-[#F59A16]/20 transition-transform group-hover:scale-105">
+            <div className="w-3.5 h-3.5 rounded-full border border-[#F59A16]" />
+            <div className="absolute -top-1 left-2.5 w-2 h-1 bg-[#111827] border-t border-[#F59A16]" />
           </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <h1 className="text-xl font-bold tracking-tight text-white whitespace-nowrap">VISIONGUARD 2.0</h1>
-              <span className="px-2 py-0.5 text-xs font-semibold uppercase tracking-wider rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 whitespace-nowrap">
-                Stage {stage}
-              </span>
+
+          <div className="flex flex-col">
+            <div className="flex items-center space-x-1">
+              <span className="text-lg font-bold text-white tracking-tight">VisionGuard</span>
+              <span className="text-lg font-bold text-[#F59A16]">2.0</span>
             </div>
-            <p className="text-xs text-slate-400 whitespace-nowrap hidden lg:block">
-              DEAM-Integrated Intelligent Product Quality Inspection &amp; Automated Sorting System
-            </p>
-          </div>
-        </div>
-
-        {/* Center Navigation Tabs */}
-        <div className="flex items-center p-1 rounded-xl bg-slate-950 border border-slate-800 text-xs overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0 max-w-full">
-          <button
-            onClick={() => onSelectTab('production')}
-            className={`px-3 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap shrink-0 ${
-              activeTab === 'production'
-                ? 'bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-md shadow-cyan-600/30'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Factory className="w-3.5 h-3.5" />
-            <span>Production Line (Stage 5)</span>
-          </button>
-
-          <button
-            onClick={() => onSelectTab('8086')}
-            className={`px-3 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap shrink-0 ${
-              activeTab === '8086'
-                ? 'bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Terminal className="w-3.5 h-3.5" />
-            <span>8086 & PPI (Stage 4)</span>
-          </button>
-
-          <button
-            onClick={() => onSelectTab('deam')}
-            className={`px-3 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap shrink-0 ${
-              activeTab === 'deam'
-                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-600/20'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Binary className="w-3.5 h-3.5" />
-            <span>DEAM Lab (Stage 3)</span>
-          </button>
-
-          <button
-            onClick={() => onSelectTab('vision')}
-            className={`px-3 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap shrink-0 ${
-              activeTab === 'vision'
-                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-600/20'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Eye className="w-3.5 h-3.5" />
-            <span>Vision Inspector (Stage 2)</span>
-          </button>
-
-          <button
-            onClick={() => onSelectTab('monitor')}
-            className={`px-3 py-1.5 rounded-lg font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap shrink-0 ${
-              activeTab === 'monitor'
-                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-600/20'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Activity className="w-3.5 h-3.5" />
-            <span>System Monitor (Stage 1)</span>
-          </button>
-        </div>
-
-        {/* Right Status */}
-        <div className="flex items-center space-x-4 self-end md:self-auto shrink-0">
-          <div className="flex items-center space-x-2 px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-950/60 text-xs">
-            <span className="text-slate-400">Backend:</span>
-            <span className="flex items-center space-x-1.5 font-medium">
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  backendOnline === true
-                    ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50'
-                    : backendOnline === false
-                    ? 'bg-rose-500 shadow-sm shadow-rose-500/50'
-                    : 'bg-amber-500 animate-pulse'
-                }`}
-              />
-              <span
-                className={
-                  backendOnline === true
-                    ? 'text-emerald-400'
-                    : backendOnline === false
-                    ? 'text-rose-400'
-                    : 'text-amber-400'
-                }
-              >
-                {backendOnline === true ? 'Online' : backendOnline === false ? 'Offline' : 'Connecting...'}
-              </span>
+            <span className="text-[10px] text-slate-400 font-normal tracking-normal -mt-0.5 hidden sm:block">
+              Intelligent Quality Inspection &amp; Sorting System
             </span>
           </div>
+        </div>
 
-          <div className="flex items-center space-x-1 text-xs text-slate-500 whitespace-nowrap shrink-0">
-            <ShieldCheck className="w-4 h-4 text-cyan-400" />
-            <span>Intel 8086 &amp; 8255</span>
+        {/* ========================================================= */}
+        {/* CENTER: DESKTOP NAVIGATION TABS (Underline Indicator)     */}
+        {/* ========================================================= */}
+        <nav className="hidden lg:flex items-center space-x-6 text-sm font-medium">
+          {navItems.map((item) => {
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onSelectTab(item.id)}
+                className={`relative py-5 transition-colors whitespace-nowrap cursor-pointer ${
+                  isActive ? 'text-white font-semibold' : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                <span>{item.label}</span>
+                {isActive && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#F59A16] rounded-full shadow-sm shadow-[#F59A16]" />
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* ========================================================= */}
+        {/* RIGHT: STATUS PILL & ORANGE "GET STARTED" BUTTON          */}
+        {/* ========================================================= */}
+        <div className="hidden sm:flex items-center space-x-4">
+          {/* Subtle Backend Status Dot */}
+          <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-400">
+            <span
+              className={`w-2 h-2 rounded-full ${
+                backendOnline === true
+                  ? 'bg-emerald-400 shadow-sm shadow-emerald-400/50'
+                  : backendOnline === false
+                  ? 'bg-rose-500 shadow-sm shadow-rose-500/50'
+                  : 'bg-amber-400 animate-pulse'
+              }`}
+            />
+            <span>{backendOnline === true ? 'Online' : backendOnline === false ? 'Offline' : 'Connecting'}</span>
           </div>
+
+          {/* Reference Orange "Get Started" CTA */}
+          <button
+            onClick={() => onSelectTab('production')}
+            className="px-4 py-2 rounded-xl bg-[#F59A16] hover:bg-[#e0890b] text-white font-bold text-xs shadow-md shadow-[#F59A16]/20 transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+          >
+            Get Started
+          </button>
+        </div>
+
+        {/* Mobile Hamburger Button */}
+        <div className="flex items-center space-x-2 lg:hidden">
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile Drawer Menu */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden bg-slate-950 border-b border-slate-800 px-6 py-4 space-y-2">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => {
+                onSelectTab(item.id);
+                setMobileMenuOpen(false);
+              }}
+              className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                activeTab === item.id
+                  ? 'bg-[#F59A16]/10 text-[#F59A16] font-bold border border-[#F59A16]/30'
+                  : 'text-slate-300 hover:bg-slate-900 hover:text-white'
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+          <div className="pt-2">
+            <button
+              onClick={() => {
+                onSelectTab('production');
+                setMobileMenuOpen(false);
+              }}
+              className="w-full py-2.5 rounded-xl bg-[#F59A16] hover:bg-[#e0890b] text-white font-bold text-sm text-center shadow-md cursor-pointer"
+            >
+              Get Started (Production Line)
+            </button>
+          </div>
+        </div>
+      )}
     </header>
   );
 };
